@@ -11,6 +11,7 @@
 
 #include "RangeF.h"
 #include <QObject>
+#include <QMultiMap>
 #include <QDebug>
 
 /** Unique identification for a point within a CurveModel */
@@ -96,7 +97,7 @@ public slots:
     void removePoint(PointId id);
     
 private:
-    using PointContainer = QMap<float, Point>;
+    using PointContainer = QMultiMap<float, Point>;
     using Iterator = PointContainer::Iterator;
     using ConstIterator = PointContainer::ConstIterator;
     

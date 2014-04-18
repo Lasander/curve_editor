@@ -154,6 +154,8 @@ QList<PointView*> CurveView::findPointView(PointId id)
 
 void CurveView::updateCurves()
 {
+    static const float ESPILON = 0.1;
+
     for (auto spline : m_splines)
     {
         auto cur = spline->data().begin();
@@ -166,6 +168,7 @@ void CurveView::updateCurves()
         
         constexpr int STEPS_PER_INTERVAL = 20;
         
+        // Start by moving tot the first point
         QPainterPath path;
         path.moveTo(QPointF(cur->time(), cur->value()));
         
@@ -176,18 +179,26 @@ void CurveView::updateCurves()
             const float endTime = next->time();
             
             const float time_diff = endTime - startTime;
-            const float step = time_diff / STEPS_PER_INTERVAL;
-            
-            // Start from next step after start as first point is handled either
-            // before the loop (moveTo) or by the previous interval
-            float time = startTime + step;
-            
-            for (int i = 0; i < STEPS_PER_INTERVAL; ++i)
+
+            if (time_diff > ESPILON)
             {
-                path.lineTo(QPointF(time, spline->value_at(time)));
-                time += step;
+                // If consequtive points have meaningful time difference between them approximate the curve with STEPS_PER_INTERVAL straight lines
+                const float step = time_diff / STEPS_PER_INTERVAL;
+
+                // Start from startTime + step as the first point is handled either
+                // before the loop (moveTo) or by the previous interval. Only loop
+                // until the last point before endTime as the last line is draw outside the
+                // loop.
+                float time = startTime;
+                for (int i = 0; i < STEPS_PER_INTERVAL - 1; ++i)
+                {
+                    time += step;
+                    path.lineTo(QPointF(time, spline->value_at(time)));
+                }
             }
             
+            // End the curve section to the next point
+            path.lineTo(QPointF(endTime, next->value()));
             ++cur;
             ++next;
         }
@@ -205,8 +216,8 @@ bool CurveView::addToSpline(CurveModel::Point const& point)
     
 	for (int i = 0; i < m_model->dimension(); ++i)
     {
-        pt::math::kb_data_set<float>::point p(point.time(), point.value(i));
-        auto point_iter = m_splines[i]->data().add(p, params);
+        pt::math::kb_data_set<float>::point p(point.id(), point.time(), point.value(i), params);
+        auto point_iter = m_splines[i]->data().add(p);
         if (point_iter == m_splines[i]->data().end())
             return false;
     }
@@ -233,11 +244,13 @@ bool CurveView::removeFromSpline(CurveModel::Point const& point)
 
 CurveView::SplineDataSet::const_iterator CurveView::findSplinePoint(CurveModel::Point const& point, int index)
 {
-    auto points = m_splines[index]->data().points_at(point.time());
-    auto cur = points.first;
-    auto next = points.second;
-    if (next != m_splines[index]->data().end())
-        return m_splines[index]->data().end();
+    return m_splines[index]->data().get_point(point.id());
+
+//    auto points = m_splines[index]->data().points_at(point.time());
+//    auto cur = points.first;
+//    auto next = points.second;
+//    if (next != m_splines[index]->data().end())
+//        return m_splines[index]->data().end();
     
-    return cur;
+//    return cur;
 }

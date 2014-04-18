@@ -25,8 +25,12 @@ public: // type definitions
     class point
     {
     public:
-        point(float time, T value, kochanek_bartels_parameters const& parameters);
+        point(int32_t id, float time, T value, kochanek_bartels_parameters const& parameters);
         
+        int32_t id() const
+        {
+            return m_id;
+        }
         float time() const
         {
             return m_time;
@@ -56,6 +60,7 @@ public: // type definitions
             return m_parameters;
         }
     private: // data members
+        int32_t m_id;
         float m_time;
         T m_value;
         kochanek_bartels_parameters m_parameters;
@@ -81,8 +86,9 @@ public:
     const_iterator optional_endpoint(float time) const;
     point_pair points_at(float time) const;
 
-    iterator add(point const& data);
-    iterator add(point const& data, kochanek_bartels_parameters const& param);
+    const_iterator get_point(int32_t id) const;
+
+    iterator add(point const& p);
     iterator erase(const_iterator pos);
     
     const_iterator begin() const
@@ -132,9 +138,10 @@ typename DataSet::point_pair get_interval(float time, DataSet const& data);
 // .inl
     
 template<typename T>
-inline kb_data_set<T>::point::point(float time, T value,
+inline kb_data_set<T>::point::point(int32_t id, float time, T value,
                                     kochanek_bartels_parameters const& parameters)
-:   m_time(time)
+:   m_id(id)
+,   m_time(time)
 ,   m_value(value)
 ,   m_parameters(parameters)
 {
@@ -228,6 +235,10 @@ inline void kb_data_set<T>::update_point(typename kb_data_set<T>::const_iterator
     float t_total = prev_time_delta + next_time_delta;
     float starting_coeff = (2.0f * next_time_delta) / t_total;
     float ending_coeff = (2.0f * prev_time_delta) / t_total;
+
+    // Account for point having same time (time delta == 0), handle as with the first/last point, i.e. use tangent as such
+    if (starting_coeff == 0) starting_coeff = 1;
+    if (ending_coeff == 0) ending_coeff = 1;
     
     // Update point
     point->set_starting_tangent(tangents.first * starting_coeff);
@@ -280,20 +291,23 @@ inline typename kb_data_set<T>::point_pair kb_data_set<T>::points_at(
     return get_interval(time, *this);
 }
 
-    
 template<typename T>
-typename kb_data_set<T>::iterator kb_data_set<T>::add(point const& data)
+inline typename kb_data_set<T>::const_iterator
+    kb_data_set<T>::get_point(int32_t id) const
 {
-    kochanek_bartels_parameters param(0, 0, 0);
-    return add(data, param);
+    auto it = m_points.begin();
+    for (; it != m_points.end(); ++it)
+    {
+        if (it->id() == id)
+            break;
+    }
+
+    return it;
 }
-    
+
 template<typename T>
-typename kb_data_set<T>::iterator kb_data_set<T>::add(point const& data,
-                                                      kochanek_bartels_parameters const& param)
+typename kb_data_set<T>::iterator kb_data_set<T>::add(point const& p)
 {
-    point p(data.time(), data.value(), param);
-   
     iterator cur = add_point(p);
     if (cur == m_points.end())
         return cur; // failed to add point
@@ -301,15 +315,15 @@ typename kb_data_set<T>::iterator kb_data_set<T>::add(point const& data,
     iterator next = cur + 1;
     if (cur == m_points.begin() && next == m_points.end())
         return cur; // cur is the only point
-    
+
     if (cur != m_points.begin())
         update(cur - 1);
-        
+
     update(cur);
-    
+
     if (next != m_points.end())
         update(next);
-    
+
     return cur;
 }
     
@@ -317,14 +331,22 @@ template<typename T>
 typename kb_data_set<T>::iterator kb_data_set<T>::add_point(point const& point)
 {
     iterator i = m_points.begin();
-    while(i != m_points.end() && i->time() < point.time())
-        ++i;
-
-    // no keys with same time
-    if (i != m_points.end() && i->time() == point.time())
+    while (i != m_points.end())
     {
-//        log("Warning: Ignoring spline key with equal time.");
-        return m_points.end();
+        if (i->time() < point.time())
+        {
+            // Order primarily based on time
+            ++i;
+            continue;
+        }
+        else if (i->time() == point.time() && i->value() < point.value())
+        {
+            // Order secondarily based on value
+            ++i;
+            continue;
+        }
+
+        break;
     }
 
     return m_points.insert(i, point);
@@ -340,12 +362,12 @@ typename kb_data_set<T>::iterator kb_data_set<T>::erase(kb_data_set<T>::const_it
     iterator next = m_points.erase(pos);
     
     if (next != m_points.begin())
-    	update(next - 1);
+        update(next - 1);
     
     if (next != m_points.end())
-    	update(next);
+        update(next);
     
-	return next;
+    return next;
 }
 
 template<typename DataSet>
@@ -382,7 +404,7 @@ typename DataSet::point_pair get_interval(float time, DataSet const& data)
     if (time < current->time())
         return typename DataSet::point_pair(data.end(), data.end());
 
-    while(next != data.end())
+    while (next != data.end())
     {
         if (current->time() == time)
         {
