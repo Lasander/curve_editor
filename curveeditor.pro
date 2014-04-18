@@ -33,7 +33,7 @@ SOURCES += \
     ScaleView.cpp \
     ScrollPositionKeeper.cpp \
     TransformationNode.cpp \
-    Curve.cpp
+    pt/math/cubic_hermite_spline.inl
 
 HEADERS  += \
     CurveModel.h \
@@ -50,4 +50,6 @@ HEADERS  += \
     ScaleView.h \
     ScrollPositionKeeper.h \
     TransformationNode.h \
-    Curve.h
+    pt/math/cubic_hermite_spline.h \
+    pt/math/kb_data_set.h \
+    pt/math/kb_spline.h
