@@ -1,8 +1,7 @@
 #ifndef PT_MATH_KB_DATA_SET_H
 #define PT_MATH_KB_DATA_SET_H
 
-#include "data_set.h"
-//#include "pt/boost/assert.h"
+#include <cassert>
 
 namespace pt { namespace math {
 
@@ -26,10 +25,7 @@ public: // type definitions
     class point
     {
     public:
-        point();
-        point(float time, T value);
         point(float time, T value, kochanek_bartels_parameters const& parameters);
-        point(float time, T value, kochanek_bartels_parameters const& parameters, T starting_tangent, T ending_tangent);
         
         float time() const
         {
@@ -76,7 +72,6 @@ public:
 
 public:
     kb_data_set();
-    kb_data_set(data_set<T> const& values, std::vector<kochanek_bartels_parameters> const& parameters);
     kb_data_set const& operator=(kb_data_set const& other)
     {
         m_points = other.m_points;
@@ -86,10 +81,9 @@ public:
     const_iterator optional_endpoint(float time) const;
     point_pair points_at(float time) const;
 
-    iterator add(typename data_set<T>::point const& data);
-    iterator add(typename data_set<T>::point const& data, kochanek_bartels_parameters const& param);
+    iterator add(point const& data);
+    iterator add(point const& data, kochanek_bartels_parameters const& param);
     iterator erase(const_iterator pos);
-    iterator erase(const_iterator first, const_iterator last);
     
     const_iterator begin() const
     {
@@ -111,14 +105,6 @@ public:
     {
         return m_points.size();
     }
-    point const& at(size_t index) const
-    {
-        return m_points[index];
-    }
-    point& at(size_t index)
-    {
-        return m_points[index];
-    }
     const_iterator get(size_t index) const
     {
         return std::next(begin(), index);
@@ -136,27 +122,14 @@ private: // data members
     std::vector<point> m_points;
 };
 
+template<class DataSet>
+typename DataSet::const_iterator get_optional_endpoint(float time,
+    DataSet const& data);
+
+template<class DataSet>
+typename DataSet::point_pair get_interval(float time, DataSet const& data);
+
 // .inl
-    
-template<typename T>
-inline kb_data_set<T>::point::point()
-:   m_time(0)
-,   m_value(static_cast<T>(0))
-,   m_parameters(0, 0, 0)
-,   m_starting_tangent(static_cast<T>(0))
-,   m_ending_tangent(static_cast<T>(0))
-{
-}
-    
-template<typename T>
-inline kb_data_set<T>::point::point(float time, T value)
-:   m_time(time)
-,   m_value(value)
-,   m_parameters(0, 0, 0)
-,   m_starting_tangent(static_cast<T>(0))
-,   m_ending_tangent(static_cast<T>(0))
-{
-}
     
 template<typename T>
 inline kb_data_set<T>::point::point(float time, T value,
@@ -164,18 +137,6 @@ inline kb_data_set<T>::point::point(float time, T value,
 :   m_time(time)
 ,   m_value(value)
 ,   m_parameters(parameters)
-{
-}
-    
-template<typename T>
-inline kb_data_set<T>::point::point(float time, T value,
-                                    kochanek_bartels_parameters const& parameters,
-                                    T starting_tangent, T ending_tangent)
-:   m_time(time)
-,   m_value(value)
-,   m_parameters(parameters)
-,   m_starting_tangent(starting_tangent)
-,   m_ending_tangent(ending_tangent)
 {
 }
     
@@ -298,43 +259,9 @@ inline void kb_data_set<T>::update(typename kb_data_set<T>::iterator point)
     return update_point(prev, point, next);
 }
     
-    
-template<typename T>
-inline typename kb_data_set<T>::point create_point(
-    typename data_set<T>::point const& cur, T prev, T next,
-    kochanek_bartels_parameters const& param)
-{
-    std::pair<T, T> tangents = calculate_tangents(prev, next, param);
-
-    return kb_data_set<T>::point(cur.time(), cur.value(), param,
-        tangents.first, tangents.second);
-}
-
 template<typename T>
 inline kb_data_set<T>::kb_data_set()
 {
-}
-
-template<typename T>
-inline kb_data_set<T>::kb_data_set(data_set<T> const& values,
-    std::vector<kochanek_bartels_parameters> const& parameters)
-{
-    assert(values.size() == parameters.size());
-
-    auto data = values.begin();
-    auto param = parameters.begin();
-	
-    // Add points (tangents not calculated)
-    for (; data != values.end(); ++data, ++param)
-    {
-		point p(data->time(), data->value(), *param);
-        iterator it = add_point(p);
-        assert(it != m_points.end());
-    }
-
-    // Update points (tangents)
-    for (iterator i = m_points.begin(); i != m_points.end(); ++i)
-    	update(i);
 }
 
 template<typename T>
@@ -355,33 +282,33 @@ inline typename kb_data_set<T>::point_pair kb_data_set<T>::points_at(
 
     
 template<typename T>
-typename kb_data_set<T>::iterator kb_data_set<T>::add(typename data_set<T>::point const& data)
+typename kb_data_set<T>::iterator kb_data_set<T>::add(point const& data)
 {
     kochanek_bartels_parameters param(0, 0, 0);
     return add(data, param);
 }
     
 template<typename T>
-typename kb_data_set<T>::iterator kb_data_set<T>::add(typename data_set<T>::point const& data,
+typename kb_data_set<T>::iterator kb_data_set<T>::add(point const& data,
                                                       kochanek_bartels_parameters const& param)
 {
     point p(data.time(), data.value(), param);
    
-	iterator cur = add_point(p);
+    iterator cur = add_point(p);
     if (cur == m_points.end())
-    	return cur; // failed to add point
+        return cur; // failed to add point
 
     iterator next = cur + 1;
     if (cur == m_points.begin() && next == m_points.end())
         return cur; // cur is the only point
     
-	if (cur != m_points.begin())
-    	update(cur - 1);
+    if (cur != m_points.begin())
+        update(cur - 1);
         
     update(cur);
     
-	if (next != m_points.end())
-    	update(next);
+    if (next != m_points.end())
+        update(next);
     
     return cur;
 }
@@ -421,24 +348,62 @@ typename kb_data_set<T>::iterator kb_data_set<T>::erase(kb_data_set<T>::const_it
 	return next;
 }
 
-template<typename T>
-typename kb_data_set<T>::iterator kb_data_set<T>::erase(kb_data_set<T>::const_iterator first,
-                                                        kb_data_set<T>::const_iterator last)
+template<typename DataSet>
+inline typename DataSet::const_iterator get_optional_endpoint(float time,
+    DataSet const& data)
 {
-    if (first == m_points.end())
-        return m_points.end();
-    
-    iterator next = m_points.erase(first, last);
-    
-    if (next != m_points.begin())
-        update(next - 1);
-    
-    if (next != m_points.end())
-        update(next);
-    
-    return next;
+    assert(data.size() > 0);
+    if (data.size() == 1)
+    {
+        return data.begin();
+    }
+    typename DataSet::const_iterator first = data.begin();
+    typename DataSet::const_iterator last = data.end() - 1;
+
+    if (time <= first->time())
+        return first;
+
+    if (time >= last->time())
+        return last;
+
+    return data.end();
 }
-    
+
+template<typename DataSet>
+typename DataSet::point_pair get_interval(float time, DataSet const& data)
+{
+    assert(data.size() > 0);
+
+    typename DataSet::const_iterator current = data.begin();
+    typename DataSet::const_iterator next = current + 1;
+
+    assert(current != data.end());
+
+    if (time < current->time())
+        return typename DataSet::point_pair(data.end(), data.end());
+
+    while(next != data.end())
+    {
+        if (current->time() == time)
+        {
+            // Exact match for key.
+            next = data.end();
+            return typename DataSet::point_pair(current, next);
+        }
+
+        if (current->time() < time && time < next->time())
+            return typename DataSet::point_pair(current, next);
+
+        ++current;
+        ++next;
+    }
+
+    if (time == current->time())
+        return typename DataSet::point_pair(current, next);
+
+    return typename DataSet::point_pair(data.end(), data.end());
+}
+
 }} // namespace pt::math
 
 #endif

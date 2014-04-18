@@ -46,7 +46,7 @@ private:
     QMultiMap<PointId, PointView*> m_pointViews;
     
     // Spline
-	using Spline = pt::math::kb_spline<float, 1>;
+    using Spline = pt::math::kb_spline<float>;
 	using SplineDataSet = pt::math::kb_data_set<float>;
     
     bool addToSpline(CurveModel::Point const& point);

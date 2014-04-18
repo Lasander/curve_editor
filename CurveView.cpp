@@ -205,7 +205,7 @@ bool CurveView::addToSpline(CurveModel::Point const& point)
     
 	for (int i = 0; i < m_model->dimension(); ++i)
     {
-        pt::math::data_set<float>::point p(point.time(), point.value(i));
+        pt::math::kb_data_set<float>::point p(point.time(), point.value(i));
         auto point_iter = m_splines[i]->data().add(p, params);
         if (point_iter == m_splines[i]->data().end())
             return false;
