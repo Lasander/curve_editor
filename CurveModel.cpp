@@ -148,7 +148,11 @@ void CurveModel::addPoint(float time, QList<float> values, float tension, float 
 
 void CurveModel::updatePoint(PointId id, float time, float value, int index)
 {
-    assert(index >= 0 && index < m_dimension);
+    if (index < 0 || index > m_dimension)
+    {
+        qDebug() << "Incorrect point dimension:" << index<< "expected: [ 0 -" << m_dimension << "]";
+        return;
+    }
     
     TimeRangeChangeChecker rangeCheck(*this);
 

@@ -17,18 +17,19 @@
 /** Unique identification for a point within a CurveModel */
 using PointId = int32_t;
 
-/** 
- CurveModel represents a potentially multi-dimensional curve as its control points. 
- Each point has an unique time and therefore the points can be ordered.
- 
- Derived from QObject for signals and slots.
+/**
+ * CurveModel represents a (potentially multi-dimensional) curve as its control points.
+ * Derived from QObject for signals and slots.
  */
 class CurveModel : public QObject
 {
     Q_OBJECT
     
 public:
-    /** A single control point within the curve */
+    /**
+     * A single control point within the curve. Points are created, owned and controlled by a CurveModel instance.
+     * Others can refer to the point using its id.
+     */
     class Point
     {
     public:
@@ -44,10 +45,10 @@ public:
         PointId id() const;
         
 	private:
-        // Construct invalid point
+        /** Construct invalid point */
         Point();
 
-        // Construct valid point, optionally with an existing id
+        /** Construct valid point, optionally with an existing id */
         Point(float time, QList<float> values, PointId id = 0);
         Point(float time, QList<float> values, float tension, float bias, float continuity, PointId id = 0);
         void updateParams(float tension, float bias, float continuity);
@@ -55,6 +56,7 @@ public:
         bool operator==(Point const& other) const;
         bool operator!=(Point const& other) const;
         
+        /** Generator for unique point id's */
         static PointId generateId();
 
         // Allow curve to create points
@@ -72,28 +74,96 @@ public:
     };
     
 public:
+    /**
+     * @brief Construct a CurveModel
+     * @param dimension
+     */
     CurveModel(int dimension);
+
     ~CurveModel();
-	   
+
+    /** @return A list of point ids. */
     QList<PointId> pointIds() const;
     
-	const Point point(PointId id) const;
-	int numberOfPoints() const;
-	int dimension() const;
+    /**
+     * @return Copy of a point with the given id. In case an invalid or
+     * non-existent id is given, a invalid point is returned.
+     */
+    const Point point(PointId id) const;
+
+    /** @return The number of point in the curve. */
+    int numberOfPoints() const;
+
+    /** @return The number of values in each point. */
+    int dimension() const;
 	
+    /** @return Curve time range [start, end]. */
     RangeF timeRange() const;
     
 signals:
+    /** @brief A new point was added. */
     void pointAdded(PointId id);
+    /** @brief Data for an existing point was modified. */
     void pointUpdated(PointId id);
+    /** @brief An existing point was removed. */
     void pointRemoved(PointId id);
-    void timeRangeChanged(RangeF range);
+    /** @brief Curve time range changed. */
+    void timeRangeChanged(RangeF newRange);
     
 public slots:
+    /**
+     * @brief Add new point with given attributes.
+     *
+     * @param time Point time
+     * @param values Array of values
+
+     * @par Tension, bias and continuity parameters default to 0.
+     * @par No point is added if number of value doesn't match the curve dimension
+     */
     void addPoint(float time, QList<float> values);
+    /**
+     * @brief Add new point with given attributes.
+     *
+     * @param time Point time
+     * @param values Array of values (number of value must match the curve dimension)
+     * @param tension Tension parameter at the point
+     * @param bias Bias parameter at the point
+     * @param continuity Continuity parameter at the point
+     *
+     * @par No point is added if number of value doesn't match the curve dimension
+     */
     void addPoint(float time, QList<float> values, float tension, float bias, float continuity);
+
+    /**
+     * @brief Update point time and/or value for one dimension of an existing point.
+     *
+     * @param id Point id
+     * @param time New time
+     * @param value New value
+     * @param index The dimension index
+     *
+     * @par Altering the time will naturally affect the whole point (also other value dimension)
+     * @par No modifications are made if the id is invalid or if the index is not a valid value dimension
+     */
     void updatePoint(PointId id, float time, float value, int index);
+    /**
+     * @brief Update parameters for an existing point
+     *
+     * @param id Point id
+     * @param tension New tension
+     * @param bias New bias
+     * @param continuity New continuity
+     *
+     * @par No modifications are made if the id is invalid
+     */
     void updatePointParams(PointId id, float tension, float bias, float continuity);
+
+    /**
+     * @brief Remove a point.
+     * @param id Point id.
+     *
+     * @par No modifications are made if the id is invalid
+     */
     void removePoint(PointId id);
     
 private:
