@@ -44,10 +44,10 @@ public:
         PointId id() const;
         
 	private:
-        // Contruct invalid point
+        // Construct invalid point
         Point();
 
-        // Contruct valid point, optionally with an existing id
+        // Construct valid point, optionally with an existing id
         Point(float time, QList<float> values, PointId id = 0);
         Point(float time, QList<float> values, float tension, float bias, float continuity, PointId id = 0);
         void updateParams(float tension, float bias, float continuity);
@@ -103,6 +103,7 @@ private:
     
     Iterator findPoint(PointId id);
     ConstIterator findPoint(PointId id) const;
+    float limitTimeToRange(float time) const;
     float limitValueToScale(float value) const;
     QList<float> limitValuesToScale(QList<float> value) const;
     
@@ -111,6 +112,8 @@ private:
     
     RangeF m_verticalValueClamp;
     RangeF m_verticalValueScale;
+
+    RangeF m_timeRange;
 };
 
 inline float CurveModel::Point::time() const

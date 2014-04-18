@@ -9,13 +9,13 @@
 #ifndef __CurveEditor__RangeF__
 #define __CurveEditor__RangeF__
 
-/** Float range [min, max]. */
+/** Inclusive float range [min, max]. */
 struct RangeF
 {
     float min;
     float max;
 
-    // Make an invalid range
+    /** Make an invalid range */
     RangeF();
     
     RangeF(float min, float max);
@@ -25,6 +25,12 @@ struct RangeF
     
     bool operator==(const RangeF& range) const;
     bool operator!=(const RangeF& range) const;
+
+    /** @return True if the give value is within this range. Note: No value is within an invalid range. */
+    bool isInRange(float value) const;
+
+    /** @return Return in-range value closest to the given value. Note: Given value returned with invalid range. */
+    float clampToRange(float value) const;
 
     /** @return Range covering both given ranges. Invalid ranges are ignored. */
 	static RangeF makeUnion(const RangeF& range1, const RangeF& range2);

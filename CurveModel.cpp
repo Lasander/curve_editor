@@ -84,7 +84,8 @@ PointId CurveModel::Point::generateId()
 CurveModel::CurveModel(int dimension)
 :	m_dimension(dimension),
 	m_verticalValueClamp(-100, 100),
-	m_verticalValueScale(-100, 100)
+    m_verticalValueScale(-100, 100),
+    m_timeRange(0, 1000)
 {
 }
 
@@ -133,14 +134,10 @@ void CurveModel::addPoint(float time, QList<float> values, float tension, float 
         qDebug() << "Incorrect value dimension:" << values.size() << "expected:" << m_dimension;
         return;
     }
-    
+
     TimeRangeChangeChecker rangeCheck(*this);
     
-    while (m_points.find(time) != m_points.end())
-    {
-    	time += 0.01;
-    }
-    
+    time = limitTimeToRange(time);
     values = limitValuesToScale(values);
     
     Point p(time, values, tension, bias, continuity);
@@ -159,6 +156,7 @@ void CurveModel::updatePoint(PointId id, float time, float value, int index)
     if (it == m_points.end())
         return;
     
+    time = limitTimeToRange(time);
     value = limitValueToScale(value);
     
     const Point old = *it;
@@ -170,12 +168,6 @@ void CurveModel::updatePoint(PointId id, float time, float value, int index)
         return; // No change
     
     m_points.erase(it);
-    
-    while (m_points.find(time) != m_points.end())
-    {
-    	time += 0.01;
-    }
-    p.m_time = time;
     m_points.insert(time, p);
     
     emit pointUpdated(id);
@@ -210,10 +202,13 @@ void CurveModel::removePoint(PointId id)
 
 RangeF CurveModel::timeRange() const
 {
-    if (m_points.size() == 0)
-        return RangeF();
+    return m_timeRange;
+
+    // Dynamically determine time range based on point range
+//    if (m_points.size() == 0)
+//        return RangeF();
     
-    return RangeF(m_points.begin()->time(), (m_points.end() - 1)->time());
+//    return RangeF(m_points.begin()->time(), (m_points.end() - 1)->time());
 }
 
 CurveModel::Iterator CurveModel::findPoint(PointId id)
@@ -238,15 +233,20 @@ CurveModel::ConstIterator CurveModel::findPoint(PointId id) const
     return it;
 }
 
+float CurveModel::limitTimeToRange(float time) const
+{
+    return m_timeRange.clampToRange(time);
+}
+
 float CurveModel::limitValueToScale(float value) const
 {
-	return qBound(m_verticalValueScale.min, value, m_verticalValueScale.max);
+    return m_verticalValueScale.clampToRange(value);
 }
 
 QList<float> CurveModel::limitValuesToScale(QList<float> values) const
 {
 	for (int i = 0; i < values.size(); ++i)
-        qBound(m_verticalValueScale.min, values[i], m_verticalValueScale.max);
+        values[i] = m_verticalValueScale.clampToRange(values[i]);
     
     return values;
 }

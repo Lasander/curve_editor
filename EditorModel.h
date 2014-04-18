@@ -50,7 +50,7 @@ private:
     void updateTimeRange();
     RangeF calculateTimeRange() const;
 
-    /** Overall cache time range */
+    /** Overall cached time range */
     RangeF m_timeRange;
 
     /** Scene time range */
