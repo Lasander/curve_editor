@@ -105,6 +105,8 @@ public:
     /** @return Curve value range [min, max]. */
     RangeF valueRange() const;
 
+    bool isSelected() const;
+
 signals:
     /** @brief A new point was added. */
     void pointAdded(PointId id);
@@ -116,6 +118,8 @@ signals:
     void timeRangeChanged(RangeF newRange);
     /** @brief Curve value range changed. */
     void valueRangeChanged(RangeF newRange);
+
+    void selectedChanged(bool status);
 
 public slots:
     /**
@@ -184,6 +188,8 @@ public slots:
      */
     void setValueRange(RangeF newRange);
     
+    void setSelected(bool status);
+
 private:
     using PointContainer = QMultiMap<float, Point>;
     using Iterator = PointContainer::Iterator;
@@ -200,6 +206,8 @@ private:
     
     RangeF m_timeRange;
     RangeF m_valueRange;
+
+    bool m_selected;
 };
 
 inline float CurveModel::Point::time() const

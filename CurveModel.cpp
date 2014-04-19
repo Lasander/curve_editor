@@ -84,7 +84,8 @@ PointId CurveModel::Point::generateId()
 CurveModel::CurveModel(int dimension)
 :	m_dimension(dimension),
     m_timeRange(0, 1000),
-    m_valueRange(-100, 100)
+    m_valueRange(-100, 100),
+    m_selected(false)
 {
 }
 
@@ -222,20 +223,28 @@ void CurveModel::setValueRange(RangeF newRange)
     }
 }
 
+void CurveModel::setSelected(bool status)
+{
+    if (m_selected != status)
+    {
+        m_selected = status;
+        emit selectedChanged(m_selected);
+    }
+}
+
 RangeF CurveModel::timeRange() const
 {
     return m_timeRange;
-
-    // Dynamically determine time range based on point range
-//    if (m_points.size() == 0)
-//        return RangeF();
-    
-//    return RangeF(m_points.begin()->time(), (m_points.end() - 1)->time());
 }
 
 RangeF CurveModel::valueRange() const
 {
     return m_valueRange;
+}
+
+bool CurveModel::isSelected() const
+{
+    return m_selected;
 }
 
 CurveModel::Iterator CurveModel::findPoint(PointId id)
