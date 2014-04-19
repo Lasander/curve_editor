@@ -37,6 +37,8 @@ public slots:
     void duplicateSelectedPoints();
     void removeSelectedPoints();
     
+    void selectedChanged(bool status);
+
 private:
     QList<PointView*> findPointView(PointId id);
     void updateCurves();

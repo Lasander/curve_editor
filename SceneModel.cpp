@@ -273,14 +273,14 @@ void SceneModel::setAllCurvesEditor(std::shared_ptr<EditorModel> editor)
             // Disconnect previous editor
             disconnect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
             disconnect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-            disconnect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setSceneTimeRange);
+            disconnect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
         }
 
         m_AllCurvesEditor = editor;
 
         if (m_AllCurvesEditor)
         {
-            m_AllCurvesEditor->setSceneTimeRange(m_timeRange);
+            m_AllCurvesEditor->setTimeRange(m_timeRange);
             m_AllCurvesEditor->clearCurves();
 
             for (auto curve : m_curves)
@@ -289,7 +289,7 @@ void SceneModel::setAllCurvesEditor(std::shared_ptr<EditorModel> editor)
             // Connect new editor
             connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
             connect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-            connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setSceneTimeRange);
+            connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
         }
     }
 }
@@ -298,30 +298,66 @@ void SceneModel::setSelectedCurvesEditor(std::shared_ptr<EditorModel> editor)
 {
     if (m_SelectedCurvesEditor != editor)
     {
-        if (m_AllCurvesEditor)
+        if (m_SelectedCurvesEditor)
         {
             // Disconnect previous editor
-//            disconnect(this, &SceneModel::curveSelected, m_AllCurvesEditor.get(), &EditorModel::addCurve);
-//            disconnect(this, &SceneModel::curveDeselected, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-            disconnect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setSceneTimeRange);
+            disconnect(this, &SceneModel::curveSelected, m_SelectedCurvesEditor.get(), &EditorModel::addCurve);
+            disconnect(this, &SceneModel::curveDeselected, m_SelectedCurvesEditor.get(), &EditorModel::removeCurve);
+            disconnect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
         }
 
-        m_AllCurvesEditor = editor;
+        m_SelectedCurvesEditor = editor;
 
-        if (m_AllCurvesEditor)
+        if (m_SelectedCurvesEditor)
         {
-            m_AllCurvesEditor->setSceneTimeRange(m_timeRange);
-            m_AllCurvesEditor->clearCurves();
+            m_SelectedCurvesEditor->setTimeRange(m_timeRange);
+            m_SelectedCurvesEditor->clearCurves();
 
-//            for (auto curve : m_curves)
-//                if (isCurveSelected(curve)) m_AllCurvesEditor->addCurve(curve);
+            for (auto curve : m_curves)
+                if (curve->isSelected()) m_SelectedCurvesEditor->addCurve(curve);
 
             // Connect new editor
-//            connect(this, &SceneModel::curveSelected, m_AllCurvesEditor.get(), &EditorModel::addCurve);
-//            connect(this, &SceneModel::curveDeselected, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-            connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setSceneTimeRange);
+            connect(this, &SceneModel::curveSelected, m_SelectedCurvesEditor.get(), &EditorModel::addCurve);
+            connect(this, &SceneModel::curveDeselected, m_SelectedCurvesEditor.get(), &EditorModel::removeCurve);
+            connect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
         }
     }
+}
+
+void SceneModel::selectCurve(std::shared_ptr<CurveModel> curve)
+{
+    if (!curve || !m_curves.contains(curve))
+    {
+        qDebug() << "Trying to select invalid curve";
+        return;
+    }
+    if (curve->isSelected())
+    {
+        qDebug() << "Trying to select already selected curve";
+        return;
+    }
+
+    curve->setSelected(true);
+
+    emit curveSelected(curve);
+}
+
+void SceneModel::deselectCurve(std::shared_ptr<CurveModel> curve)
+{
+    if (!curve || !m_curves.contains(curve))
+    {
+        qDebug() << "Trying to select invalid curve";
+        return;
+    }
+    if (!curve->isSelected())
+    {
+        qDebug() << "Trying to deselect already deselected curve";
+        return;
+    }
+
+    curve->setSelected(false);
+
+    emit curveDeselected(curve);
 }
 
 void SceneModel::saveCurves()

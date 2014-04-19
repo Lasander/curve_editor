@@ -15,6 +15,9 @@
 
 class CurveModel;
 
+/**
+ * @brief Editor model groups curves to be displayed in a CurveView.
+ */
 class EditorModel : public QObject
 {
     Q_OBJECT
@@ -35,24 +38,13 @@ public slots:
     void addCurve(std::shared_ptr<CurveModel> model);
     void removeCurve(std::shared_ptr<CurveModel> model);
     void clearCurves();
-    void curveTimeRangeChanged(RangeF timeRange);
-    void setSceneTimeRange(RangeF timeRange);
+    void setTimeRange(RangeF timeRange);
     
 private:
     using Container = QList<std::shared_ptr<CurveModel>>;
-    using Iterator = Container::Iterator;
-    using ConstIterator = Container::ConstIterator;
     
-	Container m_curves;
-
-    void updateTimeRange();
-    RangeF calculateTimeRange() const;
-
-    /** Overall cached time range */
-    RangeF m_timeRange;
-
-    /** Scene time range */
-    RangeF m_sceneTimeRange;
+    Container m_curves; /**< Curves associated with this editor */
+    RangeF m_timeRange; /**< Time range */
 };
 
 #endif /* defined(__CurveEditor__EditorModel__) */

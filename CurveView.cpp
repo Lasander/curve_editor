@@ -148,6 +148,11 @@ void CurveView::removeSelectedPoints()
         m_model->removePoint(pid);
 }
 
+void CurveView::selectedChanged(bool status)
+{
+    // TODO
+}
+
 QList<PointView*> CurveView::findPointView(PointId id)
 {
     return m_pointViews.values(id);

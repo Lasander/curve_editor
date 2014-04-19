@@ -30,15 +30,22 @@ public:
 signals:
     void curveAdded(std::shared_ptr<CurveModel> curve);
     void curveRemoved(std::shared_ptr<CurveModel> curve);
+
+    void curveSelected(std::shared_ptr<CurveModel> curve);
+    void curveDeselected(std::shared_ptr<CurveModel> curve);
+
     void timeRangeChanged(RangeF timeRange);
 
 public slots:
-    void addCurve(std::shared_ptr<CurveModel> model);
-    void removeCurve(std::shared_ptr<CurveModel> model);
+    void addCurve(std::shared_ptr<CurveModel> curve);
+    void removeCurve(std::shared_ptr<CurveModel> curve);
     void setTimeRange(RangeF timeRange);
 
     void setAllCurvesEditor(std::shared_ptr<EditorModel> editor);
     void setSelectedCurvesEditor(std::shared_ptr<EditorModel> editor);
+
+    void selectCurve(std::shared_ptr<CurveModel> curve);
+    void deselectCurve(std::shared_ptr<CurveModel> curve);
 
     void saveCurves();
     void loadCurves();

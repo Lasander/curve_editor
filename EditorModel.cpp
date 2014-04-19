@@ -32,13 +32,9 @@ void EditorModel::addCurve(std::shared_ptr<CurveModel> model)
 {
     if (m_curves.contains(model))
         return;
-    
-    connect(model.get(), &CurveModel::timeRangeChanged, this, &EditorModel::curveTimeRangeChanged);
-            
+
     m_curves.push_back(model);
     emit curveAdded(model);
-    
-    updateTimeRange();
 }
 
 void EditorModel::removeCurve(std::shared_ptr<CurveModel> model)
@@ -47,11 +43,7 @@ void EditorModel::removeCurve(std::shared_ptr<CurveModel> model)
     if (removed < 1)
         return;
 
-    disconnect(model.get(), &CurveModel::timeRangeChanged, this, &EditorModel::curveTimeRangeChanged);
-    
     emit curveRemoved(model);
-    
-    updateTimeRange();
 }
 
 void EditorModel::clearCurves()
@@ -60,39 +52,11 @@ void EditorModel::clearCurves()
         removeCurve(curve);
 }
 
-void EditorModel::curveTimeRangeChanged(RangeF)
+void EditorModel::setTimeRange(RangeF timeRange)
 {
-    updateTimeRange();
-}
-
-void EditorModel::setSceneTimeRange(RangeF timeRange)
-{
-    m_sceneTimeRange = timeRange;
-    updateTimeRange();
-}
-
-void EditorModel::updateTimeRange()
-{
-    RangeF oldTimeRange = m_timeRange;
-    m_timeRange = calculateTimeRange();
-    
-    if (m_timeRange != oldTimeRange)
+    if (m_timeRange != timeRange)
     {
-    	emit timeRangeChanged(m_timeRange);
+        m_timeRange = timeRange;
+        emit timeRangeChanged(m_timeRange);
     }
-}
-
-RangeF EditorModel::calculateTimeRange() const
-{
-    if (m_curves.size() == 0)
-    	return RangeF();
-    
-    RangeF newTimeRange;
-	for (auto c : m_curves)
-        newTimeRange = RangeF::makeUnion(newTimeRange, c->timeRange());
-    
-    // Include also scene time range
-    newTimeRange = RangeF::makeUnion(newTimeRange, m_sceneTimeRange);
-
-    return newTimeRange;
 }

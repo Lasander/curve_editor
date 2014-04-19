@@ -135,19 +135,19 @@ MainWindow::MainWindow(QWidget *parent)
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
 
     std::shared_ptr<EditorModel> allCurvesEditor(new EditorModel);
+    std::shared_ptr<EditorModel> selectedCurvesEditor(new EditorModel);
     m_sceneModel->setAllCurvesEditor(allCurvesEditor);
+    m_sceneModel->setSelectedCurvesEditor(selectedCurvesEditor);
 
     m_sceneModel->addCurve(c1);
     m_sceneModel->addCurve(c2);
     m_sceneModel->setTimeRange(RangeF(0, 1000));
 
-    std::shared_ptr<EditorModel> editorModel2(new EditorModel);
-    editorModel2->addCurve(c1);
-    editorModel2->addCurve(c2);
-   
+    m_sceneModel->selectCurve(c2);
+
     QVBoxLayout* layout = new QVBoxLayout;
     layout->addWidget(new EditorView(allCurvesEditor));
-    layout->addWidget(new EditorView(editorModel2));
+    layout->addWidget(new EditorView(selectedCurvesEditor));
     
     QWidget* widget = new QWidget;
     widget->setLayout(layout);

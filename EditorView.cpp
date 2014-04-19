@@ -180,7 +180,6 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
     
     connect(m_model.get(), &EditorModel::curveAdded, this, &EditorView::curveAdded);
     connect(m_model.get(), &EditorModel::curveRemoved, this, &EditorView::curveRemoved);
-//    connect(m_model.get(), &EditorModel::timeRangeChanged, this, &EditorView::timeRangeChanged);
     
     for (auto &curveModel : m_model->curves())
         curveAdded(curveModel);
