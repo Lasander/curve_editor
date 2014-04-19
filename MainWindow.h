@@ -14,7 +14,7 @@ public:
     ~MainWindow();
 
 private:
-    std::unique_ptr<SceneModel> m_sceneModel;
+    std::shared_ptr<SceneModel> m_sceneModel;
 };
 
 #endif // MAINWINDOW_H

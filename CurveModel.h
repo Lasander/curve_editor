@@ -78,9 +78,10 @@ public:
 public:
     /**
      * @brief Construct a CurveModel
-     * @param dimension
+     * @param dimension Number of values per point
+     * @param name Curve name
      */
-    CurveModel(int dimension);
+    CurveModel(int dimension, const QString& name);
 
     ~CurveModel();
 
@@ -106,6 +107,8 @@ public:
     RangeF valueRange() const;
 
     bool isSelected() const;
+
+    const QString& name() const;
 
 signals:
     /** @brief A new point was added. */
@@ -208,6 +211,8 @@ private:
     RangeF m_valueRange;
 
     bool m_selected;
+
+    QString m_name;
 };
 
 inline float CurveModel::Point::time() const

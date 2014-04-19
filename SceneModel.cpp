@@ -41,7 +41,7 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
         return nullptr;
     }
 
-    std::shared_ptr<CurveModel> curve(new CurveModel(items));
+    std::shared_ptr<CurveModel> curve(new CurveModel(items, elementName));
 
     QString name = stream.attributes().value("name").toString();
     qDebug() << "Curve name:" << name;

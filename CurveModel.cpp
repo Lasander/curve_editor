@@ -81,11 +81,12 @@ PointId CurveModel::Point::generateId()
 /////////////////////////////////////////
 /////////////////////////////////////////
 
-CurveModel::CurveModel(int dimension)
+CurveModel::CurveModel(int dimension, const QString& name)
 :	m_dimension(dimension),
     m_timeRange(0, 1000),
     m_valueRange(-100, 100),
-    m_selected(false)
+    m_selected(false),
+    m_name(name)
 {
 }
 
@@ -245,6 +246,11 @@ RangeF CurveModel::valueRange() const
 bool CurveModel::isSelected() const
 {
     return m_selected;
+}
+
+const QString& CurveModel::name() const
+{
+    return m_name;
 }
 
 CurveModel::Iterator CurveModel::findPoint(PointId id)
