@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 
-class EditorView;
+class SceneModel;
 
 class MainWindow : public QMainWindow
 {
@@ -12,6 +12,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget* parent = 0);
     ~MainWindow();
+
+private:
+    std::unique_ptr<SceneModel> m_sceneModel;
 };
 
 #endif // MAINWINDOW_H

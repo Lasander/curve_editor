@@ -2,6 +2,7 @@
 #include "EditorView.h"
 #include "EditorModel.h"
 #include "CurveModel.h"
+#include "SceneModel.h"
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -116,7 +117,8 @@ private:
 
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+  : QMainWindow(parent),
+    m_sceneModel(new SceneModel)
 {
     qsrand(QTime::currentTime().msec());
     
@@ -131,19 +133,21 @@ MainWindow::MainWindow(QWidget *parent)
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
-    
-    std::shared_ptr<EditorModel> editorModel1(new EditorModel);
-    editorModel1->addCurve(c1);
-    editorModel1->setSceneTimeRange(RangeF(0, 1000));
+
+    std::shared_ptr<EditorModel> allCurvesEditor(new EditorModel);
+    m_sceneModel->setAllCurvesEditor(allCurvesEditor);
+
+    m_sceneModel->addCurve(c1);
+    m_sceneModel->addCurve(c2);
+    m_sceneModel->setTimeRange(RangeF(0, 1000));
 
     std::shared_ptr<EditorModel> editorModel2(new EditorModel);
     editorModel2->addCurve(c1);
     editorModel2->addCurve(c2);
    
     QVBoxLayout* layout = new QVBoxLayout;
-    layout->addWidget(new EditorView(editorModel1));
+    layout->addWidget(new EditorView(allCurvesEditor));
     layout->addWidget(new EditorView(editorModel2));
-    layout->addWidget(new EditorView(editorModel1));
     
     QWidget* widget = new QWidget;
     widget->setLayout(layout);
@@ -152,8 +156,8 @@ MainWindow::MainWindow(QWidget *parent)
     this->resize(500, 500);
     
     QMenu* fileMenu = menuBar()->addMenu("&File");
-    fileMenu->addAction("Load curves", editorModel1.get(), SLOT(loadCurves()));
-    fileMenu->addAction("Save curves", editorModel1.get(), SLOT(saveCurves()));
+    fileMenu->addAction("Load curves", m_sceneModel.get(), SLOT(loadCurves()));
+    fileMenu->addAction("Save curves", m_sceneModel.get(), SLOT(saveCurves()));
     
     QDockWidget* pointDockWidget = new QDockWidget(tr("Point properties"), this);
     pointDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -164,10 +168,6 @@ MainWindow::MainWindow(QWidget *parent)
     sceneDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     sceneDockWidget->setWidget(new ScenePropertiesWidget);
     addDockWidget(Qt::LeftDockWidgetArea, sceneDockWidget);
-
-
-
-
 }
 
 MainWindow::~MainWindow()

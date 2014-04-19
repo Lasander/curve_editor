@@ -1,58 +1,60 @@
 //
-//  EditorModel.h
+//  SceneModel.h
 //  CurveEditor
 //
-//  Created by Lasse Lopperi on 31.12.13.
+//  Created by Lasse Lopperi on 19.04.14.
 //
 //
 
-#ifndef __CurveEditor__EditorModel__
-#define __CurveEditor__EditorModel__
+#ifndef __CurveEditor__SceneModel__
+#define __CurveEditor__SceneModel__
 
 #include "RangeF.h"
 #include <QObject>
 #include <QList>
 
 class CurveModel;
+class EditorModel;
 
-class EditorModel : public QObject
+class SceneModel : public QObject
 {
     Q_OBJECT
-    
+
 public:
-    EditorModel();
-    ~EditorModel();
-    
+    SceneModel();
+    ~SceneModel();
+
     QList<std::shared_ptr<CurveModel>> curves() const;
     const RangeF timeRange() const;
-    
+
 signals:
     void curveAdded(std::shared_ptr<CurveModel> curve);
     void curveRemoved(std::shared_ptr<CurveModel> curve);
     void timeRangeChanged(RangeF timeRange);
-    
+
 public slots:
     void addCurve(std::shared_ptr<CurveModel> model);
     void removeCurve(std::shared_ptr<CurveModel> model);
-    void clearCurves();
-    void curveTimeRangeChanged(RangeF timeRange);
-    void setSceneTimeRange(RangeF timeRange);
-    
+    void setTimeRange(RangeF timeRange);
+
+    void setAllCurvesEditor(std::shared_ptr<EditorModel> editor);
+    void setSelectedCurvesEditor(std::shared_ptr<EditorModel> editor);
+
+    void saveCurves();
+    void loadCurves();
+
 private:
     using Container = QList<std::shared_ptr<CurveModel>>;
     using Iterator = Container::Iterator;
     using ConstIterator = Container::ConstIterator;
-    
-	Container m_curves;
 
-    void updateTimeRange();
-    RangeF calculateTimeRange() const;
+    Container m_curves;
 
-    /** Overall cached time range */
-    RangeF m_timeRange;
+    RangeF m_timeRange; /**< Scene time range */
 
-    /** Scene time range */
-    RangeF m_sceneTimeRange;
+    std::shared_ptr<EditorModel> m_AllCurvesEditor;
+    std::shared_ptr<EditorModel> m_SelectedCurvesEditor;
+
 };
 
-#endif /* defined(__CurveEditor__EditorModel__) */
+#endif // __CurveEditor__SceneModel__
