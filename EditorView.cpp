@@ -117,15 +117,15 @@ BeatLinesView::~BeatLinesView()
 
 
 // A custom scene to handle right-mouse click without deselecting all
-class EditorScene : public QGraphicsScene
+class EditorGraphicsScene : public QGraphicsScene
 {
 public:
-	EditorScene(QObject* parent)
+    EditorGraphicsScene(QObject* parent)
     :	QGraphicsScene(parent)
     {
     }
     
-    ~EditorScene()
+    ~EditorGraphicsScene()
     {
     }
     
@@ -152,7 +152,7 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
 //    editor->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
 //    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     
-    m_scene = new EditorScene(this);
+    m_scene = new EditorGraphicsScene(this);
     setScene(m_scene);
     
 	m_sceneLayer = new TransformationNode(NULL);
