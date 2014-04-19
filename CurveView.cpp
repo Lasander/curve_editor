@@ -32,8 +32,9 @@ CurveView::CurveView(QGraphicsItem* parent, std::shared_ptr<CurveModel> model)
     }
     
     // Set transformation
-    qreal maxi = 100;
-    qreal mini = -100;
+    RangeF valueRange = m_model->valueRange();
+    float maxi = valueRange.max;
+    float mini = valueRange.min;
     QTransform transform;
     transform.scale(1, 1 / (maxi - mini));
     transform.translate(0, -mini);

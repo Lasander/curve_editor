@@ -27,7 +27,9 @@ class CurveModel : public QObject
     
 public:
     /**
-     * A single control point within the curve. Points are created, owned and controlled by a CurveModel instance.
+     * @brief A single control point within the curve.
+     *
+     * Points are created, owned and controlled by a CurveModel instance.
      * Others can refer to the point using its id.
      */
     class Point
@@ -45,10 +47,10 @@ public:
         PointId id() const;
         
 	private:
-        /** Construct invalid point */
+        /** \brief Construct invalid point */
         Point();
 
-        /** Construct valid point, optionally with an existing id */
+        /** @brief Construct valid point, optionally with an existing id */
         Point(float time, QList<float> values, PointId id = 0);
         Point(float time, QList<float> values, float tension, float bias, float continuity, PointId id = 0);
         void updateParams(float tension, float bias, float continuity);
@@ -56,7 +58,7 @@ public:
         bool operator==(Point const& other) const;
         bool operator!=(Point const& other) const;
         
-        /** Generator for unique point id's */
+        /** @brief Generator for unique point id's */
         static PointId generateId();
 
         // Allow curve to create points
@@ -99,7 +101,10 @@ public:
 	
     /** @return Curve time range [start, end]. */
     RangeF timeRange() const;
-    
+
+    /** @return Curve value range [min, max]. */
+    RangeF valueRange() const;
+
 signals:
     /** @brief A new point was added. */
     void pointAdded(PointId id);
@@ -109,7 +114,9 @@ signals:
     void pointRemoved(PointId id);
     /** @brief Curve time range changed. */
     void timeRangeChanged(RangeF newRange);
-    
+    /** @brief Curve value range changed. */
+    void valueRangeChanged(RangeF newRange);
+
 public slots:
     /**
      * @brief Add new point with given attributes.
@@ -165,6 +172,17 @@ public slots:
      * @par No modifications are made if the id is invalid
      */
     void removePoint(PointId id);
+
+    /**
+     * @brief Set curve time range (x-axis)
+     * @param newRange New time range
+     */
+    void setTimeRange(RangeF newRange);
+    /**
+     * @brief Set curve value range (y-axis)
+     * @param newRange New value range
+     */
+    void setValueRange(RangeF newRange);
     
 private:
     using PointContainer = QMultiMap<float, Point>;
@@ -180,10 +198,8 @@ private:
     PointContainer m_points;
 	int m_dimension;
     
-    RangeF m_verticalValueClamp;
-    RangeF m_verticalValueScale;
-
     RangeF m_timeRange;
+    RangeF m_valueRange;
 };
 
 inline float CurveModel::Point::time() const

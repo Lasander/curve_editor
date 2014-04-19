@@ -83,9 +83,8 @@ PointId CurveModel::Point::generateId()
 
 CurveModel::CurveModel(int dimension)
 :	m_dimension(dimension),
-	m_verticalValueClamp(-100, 100),
-    m_verticalValueScale(-100, 100),
-    m_timeRange(0, 1000)
+    m_timeRange(0, 1000),
+    m_valueRange(-100, 100)
 {
 }
 
@@ -204,6 +203,25 @@ void CurveModel::removePoint(PointId id)
     emit pointRemoved(id);
 }
 
+
+void CurveModel::setTimeRange(RangeF newRange)
+{
+    if (m_timeRange != newRange)
+    {
+        m_timeRange = newRange;
+        emit timeRangeChanged(m_timeRange);
+    }
+}
+
+void CurveModel::setValueRange(RangeF newRange)
+{
+    if (m_valueRange != newRange)
+    {
+        m_valueRange = newRange;
+        emit valueRangeChanged(m_valueRange);
+    }
+}
+
 RangeF CurveModel::timeRange() const
 {
     return m_timeRange;
@@ -213,6 +231,11 @@ RangeF CurveModel::timeRange() const
 //        return RangeF();
     
 //    return RangeF(m_points.begin()->time(), (m_points.end() - 1)->time());
+}
+
+RangeF CurveModel::valueRange() const
+{
+    return m_valueRange;
 }
 
 CurveModel::Iterator CurveModel::findPoint(PointId id)
@@ -244,13 +267,13 @@ float CurveModel::limitTimeToRange(float time) const
 
 float CurveModel::limitValueToScale(float value) const
 {
-    return m_verticalValueScale.clampToRange(value);
+    return m_valueRange.clampToRange(value);
 }
 
 QList<float> CurveModel::limitValuesToScale(QList<float> values) const
 {
 	for (int i = 0; i < values.size(); ++i)
-        values[i] = m_verticalValueScale.clampToRange(values[i]);
+        values[i] = m_valueRange.clampToRange(values[i]);
     
     return values;
 }
