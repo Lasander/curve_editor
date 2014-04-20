@@ -148,7 +148,7 @@ void CurveView::removeSelectedPoints()
         m_model->removePoint(pid);
 }
 
-void CurveView::selectedChanged(bool status)
+void CurveView::selectedChanged(bool /*status*/)
 {
     // TODO
 }

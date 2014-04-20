@@ -169,7 +169,7 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
     connect(m_model.get(), &EditorModel::timeRangeChanged, scaleView, &ScaleView::setTimeScale);
     scaleView->setTimeScale(m_model->timeRange());
     
-    BeatLinesView* beatView = new BeatLinesView(m_sceneLayer);
+    /*BeatLinesView* beatView =*/ new BeatLinesView(m_sceneLayer);
 
     // Set view transformation
     QTransform transform;
