@@ -106,8 +106,10 @@ public:
     /** @return Curve value range [min, max]. */
     RangeF valueRange() const;
 
+    /** @return True if curve is selected. */
     bool isSelected() const;
 
+    /** @return Curve name. */
     const QString& name() const;
 
 signals:
@@ -117,11 +119,13 @@ signals:
     void pointUpdated(PointId id);
     /** @brief An existing point was removed. */
     void pointRemoved(PointId id);
+
     /** @brief Curve time range changed. */
     void timeRangeChanged(RangeF newRange);
     /** @brief Curve value range changed. */
     void valueRangeChanged(RangeF newRange);
 
+    /** @brief Curve was selected or deselected. */
     void selectedChanged(bool status);
 
 public slots:
@@ -191,6 +195,10 @@ public slots:
      */
     void setValueRange(RangeF newRange);
     
+    /**
+     * @brief Set curve selection status
+     * @param status True for selected, false for deselected.
+     */
     void setSelected(bool status);
 
 private:
