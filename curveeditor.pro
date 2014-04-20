@@ -4,18 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-
+QT += core gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = Editor
+TARGET = curveeditor
 TEMPLATE = app
 
 QMAKE_CXXFLAGS = -mmacosx-version-min=10.7 -std=gnu0x -stdlib=libc+
-
 CONFIG += c++11
-
-#QMAKE_CXXFLAGS += -std=c++11
 
 SOURCES += \
     CurveModel.cpp \

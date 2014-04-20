@@ -205,7 +205,7 @@ private:
     QList<float> limitValuesToScale(QList<float> value) const;
     
     PointContainer m_points;
-	int m_dimension;
+    const int m_dimension;
     
     RangeF m_timeRange;
     RangeF m_valueRange;

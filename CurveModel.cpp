@@ -83,7 +83,7 @@ PointId CurveModel::Point::generateId()
 
 CurveModel::CurveModel(int dimension, const QString& name)
 :	m_dimension(dimension),
-    m_timeRange(0, 1000),
+    m_timeRange(),
     m_valueRange(-100, 100),
     m_selected(false),
     m_name(name)
@@ -132,7 +132,7 @@ void CurveModel::addPoint(float time, QList<float> values, float tension, float 
 {
     if (values.size() != m_dimension)
     {
-        qDebug() << "Incorrect value dimension:" << values.size() << "expected:" << m_dimension;
+        qWarning() << "Incorrect value dimension:" << values.size() << "expected:" << m_dimension;
         return;
     }
 
@@ -149,9 +149,9 @@ void CurveModel::addPoint(float time, QList<float> values, float tension, float 
 
 void CurveModel::updatePoint(PointId id, float time, float value, int index)
 {
-    if (index < 0 || index > m_dimension)
+    if (index < 0 || index >= m_dimension)
     {
-        qDebug() << "Incorrect point dimension:" << index<< "expected: [ 0 -" << m_dimension << "]";
+        qWarning() << "Incorrect point dimension:" << index<< "expected: [ 0 -" << m_dimension - 1 << "]";
         return;
     }
     
@@ -159,7 +159,10 @@ void CurveModel::updatePoint(PointId id, float time, float value, int index)
 
     Iterator it = findPoint(id);
     if (it == m_points.end())
+    {
+        qWarning() << "Unknown point" << id;
         return;
+    }
     
     time = limitTimeToRange(time);
     value = limitValueToScale(value);
@@ -198,7 +201,10 @@ void CurveModel::removePoint(PointId id)
 
     Iterator it = findPoint(id);
     if (it == m_points.end())
+    {
+        qWarning() << "Unknown point" << id;
         return;
+    }
     
     m_points.erase(it);
     
