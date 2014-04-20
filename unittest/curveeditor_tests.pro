@@ -18,13 +18,14 @@ VPATH = ..
 # Replace normal main() with test main()
 SOURCES -= main.cpp
 SOURCES += maintest.cpp \
-    UnitTestHelpers.cpp
-
-SOURCES += \
+    UnitTestHelpers.cpp \
     Test_CurveModel.cpp \
+    Test_SceneModel.cpp
 
 HEADERS += \
+    UnitTestHelpers.h \
     Test_CurveModel.h \
     CurveTestReceiver.h \
-    UnitTestHelpers.h
+    Test_SceneModel.h \
+    SceneTestReceiver.h
 

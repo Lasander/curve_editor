@@ -252,28 +252,67 @@ std::shared_ptr<EditorModel> SceneModel::getSelectedCurvesEditor()
     return m_SelectedCurvesEditor;
 }
 
-void SceneModel::addCurve(std::shared_ptr<CurveModel> model)
+void SceneModel::addCurve(std::shared_ptr<CurveModel> curve)
 {
-    if (m_curves.contains(model))
+    if (!curve)
+    {
+        qWarning() << "Trying to add invalid curve";
         return;
+    }
+
+    if (m_curves.contains(curve))
+    {
+        qWarning() << "Trying to add duplicate curve" << curve->name();
+        return;
+    }
 
     // Synchronize curve time range to scene
-    model->setTimeRange(m_timeRange);
-    connect(this,&SceneModel::timeRangeChanged, model.get(), &CurveModel::setTimeRange);
+    curve->setTimeRange(m_timeRange);
+    connect(this, &SceneModel::timeRangeChanged, curve.get(), &CurveModel::setTimeRange);
 
-    m_curves.push_back(model);
-    emit curveAdded(model);
+    // Listen to curve selection changes
+    connect(curve.get(), &CurveModel::selectedChanged, this, &SceneModel::curveSelectionChanged);
+
+    m_curves.push_back(curve);
+    emit curveAdded(curve);
+
+    if (curve->isSelected())
+    {
+        // Notify curve selection in case an already select curve is added
+        emit curveSelected(curve);
+    }
 }
 
-void SceneModel::removeCurve(std::shared_ptr<CurveModel> model)
+void SceneModel::removeCurve(std::shared_ptr<CurveModel> curve)
 {
-    int removed = m_curves.removeAll(model);
-    if (removed < 1)
+    if (!curve)
+    {
+        qWarning() << "Trying to remove invalid curve";
         return;
+    }
 
-    disconnect(this,&SceneModel::timeRangeChanged, model.get(), &CurveModel::setTimeRange);
+    if (!m_curves.contains(curve))
+    {
+        qWarning() << "Trying to remove non-existent curve";
+        return;
+    }
 
-    emit curveRemoved(model);
+    // Deselect curve on removal
+    curve->setSelected(false);
+    // No longer listen to curve selection changes
+    disconnect(curve.get(), &CurveModel::selectedChanged, this, &SceneModel::curveSelectionChanged);
+
+    // Remove all instance, just in case
+    int removed = m_curves.removeAll(curve);
+    if (removed < 1)
+    {
+        qWarning() << "Trying to remove non-existent curve" << curve->name();
+        return;
+    }
+
+    emit curveRemoved(curve);
+
+    disconnect(this, &SceneModel::timeRangeChanged, curve.get(), &CurveModel::setTimeRange);
 }
 
 void SceneModel::setTimeRange(RangeF newTimeRange)
@@ -289,36 +328,50 @@ void SceneModel::selectCurve(std::shared_ptr<CurveModel> curve)
 {
     if (!curve || !m_curves.contains(curve))
     {
-        qDebug() << "Trying to select invalid curve";
+        qWarning() << "Trying to select invalid curve";
         return;
     }
     if (curve->isSelected())
     {
-        qDebug() << "Trying to select already selected curve";
+        qWarning() << "Trying to select already selected curve";
         return;
     }
 
-    curve->setSelected(true);
-
-    emit curveSelected(curve);
+    curve->setSelected(true); // CurveModel selection notification will result in emit curveSelected
 }
 
 void SceneModel::deselectCurve(std::shared_ptr<CurveModel> curve)
 {
     if (!curve || !m_curves.contains(curve))
     {
-        qDebug() << "Trying to select invalid curve";
+        qWarning() << "Trying to select invalid curve";
         return;
     }
     if (!curve->isSelected())
     {
-        qDebug() << "Trying to deselect already deselected curve";
+        qWarning() << "Trying to deselect already deselected curve";
         return;
     }
 
-    curve->setSelected(false);
+    curve->setSelected(false); // CurveModel deselection notification will result in emit curveDeselected
+}
 
-    emit curveDeselected(curve);
+void SceneModel::curveSelectionChanged(bool status)
+{
+    const CurveModel* sendingCurve = static_cast<CurveModel*>(sender());
+
+    // Find the curve that sent the notification and emit (de)selection
+    for (auto curve : m_curves)
+        if (curve.get() == sendingCurve)
+        {
+            if (status)
+                emit curveSelected(curve);
+            else
+                emit curveDeselected(curve);
+            return;
+        }
+
+    qWarning() << "Manual selection change notification from unknown curve" << status;
 }
 
 void SceneModel::saveCurves()

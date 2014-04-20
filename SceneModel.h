@@ -37,11 +37,9 @@ public:
     /** @return Scene time range. */
     const RangeF timeRange() const;
 
-    /**
-     * @brief getAllCurvesEditor
-     * @param editor
-     */
+    /** @return An editor model that will contain all curves in the scene. */
     std::shared_ptr<EditorModel> getAllCurvesEditor();
+    /** @return An editor model that will contain selected curves in the scene. */
     std::shared_ptr<EditorModel> getSelectedCurvesEditor();
 
 signals:
@@ -99,6 +97,17 @@ public slots:
      * A file open dialog is opened to select the input file.
      */
     void loadCurves();
+
+private slots:
+    /**
+     * @brief Notification of curve model selection change.
+     *
+     * Expected only from curves currently in the scene. Note: The curve sending this signal
+     * is retrieved using QObject::sender().
+     *
+     * @param status Current selection status
+     */
+    void curveSelectionChanged(bool status);
 
 private:
     using Container = QList<std::shared_ptr<CurveModel>>;
