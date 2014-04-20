@@ -6,9 +6,6 @@
 
 #include <QDebug>
 
-//namespace {
-//} // anonymous ns
-
 void Test_CurveModel::init()
 {
 }
@@ -17,7 +14,7 @@ void Test_CurveModel::cleanup()
 {
 }
 
-void Test_CurveModel::testContruction()
+void Test_CurveModel::testConstruction()
 {
     { // Curve with 1 dimension and name "Name"
         CurveModel curve(1, "Name");

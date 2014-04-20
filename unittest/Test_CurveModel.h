@@ -11,7 +11,7 @@ private slots:
     void init();
     void cleanup();
 
-    void testContruction();
+    void testConstruction();
     void testPointAddUpdateRemove();
     void testSelection();
 };
