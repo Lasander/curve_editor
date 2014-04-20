@@ -214,11 +214,22 @@ void saveCurves(QList<std::shared_ptr<CurveModel>> curves)
 
 
 SceneModel::SceneModel()
+  : m_AllCurvesEditor(new EditorModel),
+    m_SelectedCurvesEditor(new EditorModel)
 {
+    // Connect standard editors
+    connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
+    connect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
+    connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
+
+    connect(this, &SceneModel::curveSelected, m_SelectedCurvesEditor.get(), &EditorModel::addCurve);
+    connect(this, &SceneModel::curveDeselected, m_SelectedCurvesEditor.get(), &EditorModel::removeCurve);
+    connect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
 }
 
 SceneModel::~SceneModel()
 {
+    // Editors are disconnect automatically
 }
 
 QList<std::shared_ptr<CurveModel>> SceneModel::curves() const
@@ -229,6 +240,16 @@ QList<std::shared_ptr<CurveModel>> SceneModel::curves() const
 const RangeF SceneModel::timeRange() const
 {
     return m_timeRange;
+}
+
+std::shared_ptr<EditorModel> SceneModel::getAllCurvesEditor()
+{
+    return m_AllCurvesEditor;
+}
+
+std::shared_ptr<EditorModel> SceneModel::getSelectedCurvesEditor()
+{
+    return m_SelectedCurvesEditor;
 }
 
 void SceneModel::addCurve(std::shared_ptr<CurveModel> model)
@@ -261,66 +282,6 @@ void SceneModel::setTimeRange(RangeF newTimeRange)
     {
         m_timeRange = newTimeRange;
         emit timeRangeChanged(m_timeRange);
-    }
-}
-
-void SceneModel::setAllCurvesEditor(std::shared_ptr<EditorModel> editor)
-{
-    if (m_AllCurvesEditor != editor)
-    {
-        if (m_AllCurvesEditor)
-        {
-            // Disconnect previous editor
-            disconnect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
-            disconnect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-            disconnect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
-        }
-
-        m_AllCurvesEditor = editor;
-
-        if (m_AllCurvesEditor)
-        {
-            m_AllCurvesEditor->setTimeRange(m_timeRange);
-            m_AllCurvesEditor->clearCurves();
-
-            for (auto curve : m_curves)
-                m_AllCurvesEditor->addCurve(curve);
-
-            // Connect new editor
-            connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
-            connect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-            connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
-        }
-    }
-}
-
-void SceneModel::setSelectedCurvesEditor(std::shared_ptr<EditorModel> editor)
-{
-    if (m_SelectedCurvesEditor != editor)
-    {
-        if (m_SelectedCurvesEditor)
-        {
-            // Disconnect previous editor
-            disconnect(this, &SceneModel::curveSelected, m_SelectedCurvesEditor.get(), &EditorModel::addCurve);
-            disconnect(this, &SceneModel::curveDeselected, m_SelectedCurvesEditor.get(), &EditorModel::removeCurve);
-            disconnect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
-        }
-
-        m_SelectedCurvesEditor = editor;
-
-        if (m_SelectedCurvesEditor)
-        {
-            m_SelectedCurvesEditor->setTimeRange(m_timeRange);
-            m_SelectedCurvesEditor->clearCurves();
-
-            for (auto curve : m_curves)
-                if (curve->isSelected()) m_SelectedCurvesEditor->addCurve(curve);
-
-            // Connect new editor
-            connect(this, &SceneModel::curveSelected, m_SelectedCurvesEditor.get(), &EditorModel::addCurve);
-            connect(this, &SceneModel::curveDeselected, m_SelectedCurvesEditor.get(), &EditorModel::removeCurve);
-            connect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
-        }
     }
 }
 

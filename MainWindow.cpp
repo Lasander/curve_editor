@@ -112,15 +112,10 @@ MainWindow::MainWindow(QWidget *parent)
     c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
     
     std::shared_ptr<CurveModel> c2(new CurveModel(1, "Second"));
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 1);
-
-    std::shared_ptr<EditorModel> allCurvesEditor(new EditorModel);
-    std::shared_ptr<EditorModel> selectedCurvesEditor(new EditorModel);
-    m_sceneModel->setAllCurvesEditor(allCurvesEditor);
-    m_sceneModel->setSelectedCurvesEditor(selectedCurvesEditor);
+    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
 
     m_sceneModel->addCurve(c1);
     m_sceneModel->addCurve(c2);
@@ -129,8 +124,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_sceneModel->selectCurve(c2);
 
     QVBoxLayout* layout = new QVBoxLayout;
-    layout->addWidget(new EditorView(allCurvesEditor));
-    layout->addWidget(new EditorView(selectedCurvesEditor));
+    layout->addWidget(new EditorView(m_sceneModel->getAllCurvesEditor()));
+    layout->addWidget(new EditorView(m_sceneModel->getSelectedCurvesEditor()));
     
     QWidget* widget = new QWidget;
     widget->setLayout(layout);
