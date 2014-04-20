@@ -106,7 +106,7 @@ void Test_CurveModel::testPointAddUpdateRemove()
 
         // Try to add point with incorrect dimension (1, {4})
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.addPoint(1, {4});
         }
         QCOMPARE(curve.numberOfPoints(), 0);
@@ -115,7 +115,7 @@ void Test_CurveModel::testPointAddUpdateRemove()
 
         // Try to add point with empty value (1, {})
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.addPoint(1, {});
         }
         QCOMPARE(curve.numberOfPoints(), 0);
@@ -134,13 +134,13 @@ void Test_CurveModel::testPointAddUpdateRemove()
 
         // Try to update point with another id
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.updatePoint(first + 1, 2, 5, 0);
         }
 
         // Try to update point with invalid id
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.updatePoint(PointId(), 2, 5, 0);
         }
         QCOMPARE(receiver.addedCount, 1);
@@ -152,12 +152,12 @@ void Test_CurveModel::testPointAddUpdateRemove()
 
         // Try to update point with invalid index
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.updatePoint(first, 3, 7, -1);
         }
         // Try to update point with invalid index
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.updatePoint(first, 3, 7, 1);
         }
 
@@ -176,13 +176,13 @@ void Test_CurveModel::testPointAddUpdateRemove()
 
         // Try to remove point with another id
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.removePoint(first + 1);
         }
 
         // Try to update point with invalid id
         {
-            ExpectErrors errors;
+            EXPECT_ERRORS;
             curve.removePoint(PointId());
         }
         QCOMPARE(receiver.addedCount, 1);
