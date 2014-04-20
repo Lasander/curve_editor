@@ -101,17 +101,17 @@ private:
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent),
-    m_sceneModel(new SceneModel)
+    m_sceneModel(std::make_shared<SceneModel>())
 {
     qsrand(QTime::currentTime().msec());
     
-    std::shared_ptr<CurveModel> c1(new CurveModel(2, "First"));
+    auto c1 = std::make_shared<CurveModel>(2, "First");
     c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
     c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
     c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
     c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
     
-    std::shared_ptr<CurveModel> c2(new CurveModel(1, "Second"));
+    auto c2 = std::make_shared<CurveModel>(1, "Second");
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
     c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
