@@ -213,9 +213,12 @@ void saveCurves(QList<std::shared_ptr<CurveModel>> curves)
 ///////////////////////////////////////
 
 
-SceneModel::SceneModel()
-  : m_AllCurvesEditor(new EditorModel),
-    m_SelectedCurvesEditor(new EditorModel)
+SceneModel::SceneModel(RangeF timeRange)
+  : m_timeRange(timeRange),
+    m_beatOffset(0.0f),
+    m_bpm(80.0f), // Default to 80bpm
+    m_AllCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm)),
+    m_SelectedCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm))
 {
     // Connect standard editors
     connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
@@ -240,6 +243,16 @@ QList<std::shared_ptr<CurveModel>> SceneModel::curves() const
 const RangeF SceneModel::timeRange() const
 {
     return m_timeRange;
+}
+
+float SceneModel::beatOffset() const
+{
+    return m_beatOffset;
+}
+
+float SceneModel::beatsPerMinute() const
+{
+    return m_bpm;
 }
 
 std::shared_ptr<EditorModel> SceneModel::getAllCurvesEditor()
@@ -321,6 +334,24 @@ void SceneModel::setTimeRange(RangeF newTimeRange)
     {
         m_timeRange = newTimeRange;
         emit timeRangeChanged(m_timeRange);
+    }
+}
+
+void SceneModel::setBeatOffset(float beatOffset)
+{
+    if (m_beatOffset != beatOffset)
+    {
+        m_beatOffset = beatOffset;
+        emit beatOffsetChanged(m_beatOffset);
+    }
+}
+
+void SceneModel::setBpm(float bpm)
+{
+    if (m_bpm != bpm)
+    {
+        m_bpm = bpm;
+        emit bpmChanged(m_bpm);
     }
 }
 

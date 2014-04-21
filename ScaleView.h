@@ -22,17 +22,16 @@ class ScaleView :
 	private TransformationNode
 {
 public:
-    ScaleView(const QList<float>& scaleLines, QGraphicsItem* parent);
+    ScaleView(int numberOfScaleLines, const RangeF& timeRange, QGraphicsItem* parent);
     ~ScaleView();
     
 public slots:
     void setValueScale(RangeF valueScale);
-    void setTimeScale(RangeF timeScale);
+    void setTimeRange(RangeF timeRange);
     
 private:
     RangeF m_valueScale;
-    RangeF m_timeScale;
-    QList<float> m_scaleLineValues;
+    RangeF m_timeRange;
     QList<ScaleLineView*> m_scaleLines;
 };
 

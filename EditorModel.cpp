@@ -10,7 +10,10 @@
 #include "CurveModel.h"
 #include <QDebug>
 
-EditorModel::EditorModel()
+EditorModel::EditorModel(RangeF timeRange, float beatOffset, float bpm)
+  : m_timeRange(timeRange),
+    m_beatOffset(beatOffset),
+    m_bpm(bpm)
 {
 }
 
@@ -26,6 +29,16 @@ QList<std::shared_ptr<CurveModel>> EditorModel::curves() const
 const RangeF EditorModel::timeRange() const
 {
     return m_timeRange;
+}
+
+float EditorModel::beatOffset() const
+{
+    return m_beatOffset;
+}
+
+float EditorModel::bpm() const
+{
+    return m_bpm;
 }
 
 void EditorModel::addCurve(std::shared_ptr<CurveModel> model)
@@ -60,3 +73,22 @@ void EditorModel::setTimeRange(RangeF timeRange)
         emit timeRangeChanged(m_timeRange);
     }
 }
+
+void EditorModel::setBeatOffset(float beatOffset)
+{
+    if (m_beatOffset != beatOffset)
+    {
+        m_beatOffset = beatOffset;
+        emit beatOffsetChanged(m_beatOffset);
+    }
+}
+
+void EditorModel::setBpm(float bpm)
+{
+    if (m_bpm != bpm)
+    {
+        m_bpm = bpm;
+        emit bpmChanged(m_bpm);
+    }
+}
+

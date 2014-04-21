@@ -101,27 +101,27 @@ private:
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent),
-    m_sceneModel(std::make_shared<SceneModel>())
+    m_sceneModel(std::make_shared<SceneModel>(RangeF(0, 100)))
 {
     qsrand(QTime::currentTime().msec());
     
     auto c1 = std::make_shared<CurveModel>(2, "First");
-    c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
     
     auto c2 = std::make_shared<CurveModel>(1, "Second");
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 500, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
 
     m_sceneModel->addCurve(c1);
     m_sceneModel->addCurve(c2);
-    m_sceneModel->setTimeRange(RangeF(0, 1000));
 
     m_sceneModel->selectCurve(c2);
+    m_sceneModel->setBpm(20);
 
     QVBoxLayout* layout = new QVBoxLayout;
     layout->addWidget(new EditorView(m_sceneModel->getAllCurvesEditor()));
