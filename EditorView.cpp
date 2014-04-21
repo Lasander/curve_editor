@@ -321,6 +321,8 @@ void EditorView::updateTransformation()
     
     QSizeF newSize(contentsRect().size().width(), contentsRect().size().height());
 
+//    qDebug() << "updateTransformation:";
+
     bool sceneFitsInViewBefore = m_scene->sceneRect().width() <= newSize.width();
     
     //  Update scene transformation according to new size and timescale => affecs scene rect
@@ -333,10 +335,39 @@ void EditorView::updateTransformation()
         m_sceneLayer->setTransform(QTransform::fromScale(xScale, yScale));
     }
 
-    QRectF sceneRectAfter = m_scene->itemsBoundingRect();
-    QRectF newSceneRect(0, 0, qMax(sceneRectAfter.width(), newSize.width()), newSize.height());
+    // Bounding rects for items that ignore transformations are not calculated correctly (!?),
+    // maybe related to https://bugreports.qt-project.org/browse/QTBUG-38344. Calculate scene
+    // items bounding rect by manually iterating
 
-    bool sceneFitsInViewAfter = sceneRectAfter.width() <= newSize.width();
+    //QRectF sceneRectAfter = m_scene->itemsBoundingRect();
+    QRectF sceneRectAfter;
+    for (QGraphicsItem* item : m_scene->items())
+    {
+        if (!item->isVisible())
+            continue;
+
+        QRectF boundingRect;
+
+        if (item->flags() & QGraphicsItem::ItemIgnoresTransformations)
+        {
+            QTransform viewTransform = item->deviceTransform(this->viewportTransform());
+            QRectF viewRect = viewTransform.mapRect(item->boundingRect());
+            boundingRect = mapToScene(viewRect.x(), viewRect.y(), viewRect.width(), viewRect.height()).boundingRect();
+        }
+        else
+        {
+            boundingRect = item->sceneBoundingRect();
+        }
+
+//        qDebug() << "  Item:" << boundingRect;
+        sceneRectAfter |= boundingRect;
+    }
+
+    qreal sceneAfterRight = sceneRectAfter.x() + sceneRectAfter.width();
+    QRectF newSceneRect(0, 0, qMax(sceneAfterRight, newSize.width()), newSize.height());
+    qDebug() << "  SceneRect:" << m_scene->sceneRect() << "->" << newSceneRect;
+
+    bool sceneFitsInViewAfter = sceneAfterRight <= newSize.width();
     
     //  Update scene transformation again if need for horizontalScrollBar has changed
     if (sceneFitsInViewBefore != sceneFitsInViewAfter)
