@@ -46,7 +46,7 @@ BeatLinesView::BeatLineView::~BeatLineView()
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-BeatLinesView::BeatLinesView(RangeF timeRange, float timeScale, float beatOffset, float bpm, QGraphicsItem* parent)
+BeatLinesView::BeatLinesView(RangeF timeRange, float timeScale, double beatOffset, double bpm, QGraphicsItem* parent)
   : TransformationNode(parent),
     m_timeRange(timeRange),
     m_timeScale(timeScale),
@@ -80,13 +80,13 @@ void BeatLinesView::setTimeRange(RangeF timeRange)
     updateBeatLines();
 }
 
-void BeatLinesView::setBeatOffset(float beatOffset)
+void BeatLinesView::setBeatOffset(double beatOffset)
 {
     m_beatOffset = beatOffset;
     updateBeatLines();
 }
 
-void BeatLinesView::setBpm(float bpm)
+void BeatLinesView::setBpm(double bpm)
 {
     m_bpm = bpm;
     updateBeatLines();
@@ -102,7 +102,7 @@ void BeatLinesView::updateBeatLines()
     int barIndex = 1;
     int beatIndex = 1;
 
-    float beatStep = 60.0f / m_bpm;
+    double beatStep = 60.0 / m_bpm;
     QGraphicsItem* thisAsGraphicsItem = this;
 
     for (float beat = m_timeRange.min + m_beatOffset;

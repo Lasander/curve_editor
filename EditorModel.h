@@ -31,7 +31,7 @@ public:
      * @param beatOffset Initial editor beat offset
      * @param bpm Initial editor bpm
      */
-    EditorModel(RangeF timeRange, float beatOffset, float bpm);
+    EditorModel(RangeF timeRange, double beatOffset, double bpm);
     /** Destructor */
     ~EditorModel();
     
@@ -42,9 +42,9 @@ public:
     const RangeF timeRange() const;
 
     /** @return Editor beat offset. */
-    float beatOffset() const;
+    double beatOffset() const;
     /** @return Editor bpm. */
-    float bpm() const;
+    double bpm() const;
     
 signals:
     /**
@@ -67,12 +67,12 @@ signals:
      * @brief Editor beat offset changed.
      * @param beatOffset New beat offset
      */
-    void beatOffsetChanged(float beatOffset);
+    void beatOffsetChanged(double beatOffset);
     /**
      * @brief Editor bpm changed.
      * @param beatOffset New bpm
      */
-    void bpmChanged(float bpm);
+    void bpmChanged(double bpm);
 
 public slots:
     /**
@@ -100,20 +100,20 @@ public slots:
      * @brief Set editor beat offset in seconds.
      * @param beatOffset New beat offset
      */
-    void setBeatOffset(float beatOffset);
+    void setBeatOffset(double beatOffset);
     /**
      * @brief Set editor beats per minute.
      * @param timeRange New bpm.
      */
-    void setBpm(float bpm);
+    void setBpm(double bpm);
 
 private:
     using Container = QList<std::shared_ptr<CurveModel>>;
     
     Container m_curves; /**< Curves associated with this editor */
     RangeF m_timeRange; /**< Time range */
-    float m_beatOffset; /**< Scene music start offset */
-    float m_bpm; /**< Scene music's beats per minute */
+    double m_beatOffset; /**< Scene music start offset */
+    double m_bpm; /**< Scene music's beats per minute */
 };
 
 #endif /* defined(__CurveEditor__EditorModel__) */

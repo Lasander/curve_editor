@@ -41,9 +41,9 @@ public:
     const RangeF timeRange() const;
 
     /** @return Offset to first beat in seconds. */
-    float beatOffset() const;
+    double beatOffset() const;
     /** @return Rhythm in beats per minute. */
-    float beatsPerMinute() const;
+    double bpm() const;
 
     /** @return An editor model that will contain all curves in the scene. */
     std::shared_ptr<EditorModel> getAllCurvesEditor();
@@ -65,9 +65,9 @@ signals:
     void timeRangeChanged(RangeF timeRange);
 
     /** @brief Scene beat offset changed. */
-    void beatOffsetChanged(float beatOffset);
+    void beatOffsetChanged(double beatOffset);
     /** @brief Scene bpm changed. */
-    void bpmChanged(float bpm);
+    void bpmChanged(double bpm);
 
 public slots:
     /**
@@ -91,12 +91,12 @@ public slots:
      * @brief Set scene beat offset in seconds.
      * @param beatOffset New beat offset
      */
-    void setBeatOffset(float beatOffset);
+    void setBeatOffset(double beatOffset);
     /**
      * @brief Set scene beats per minute.
      * @param timeRange New bpm.
      */
-    void setBpm(float bpm);
+    void setBpm(double bpm);
 
     /**
      * @brief Select a curve.
@@ -140,8 +140,8 @@ private:
 
     RangeF m_timeRange; /**< Scene time range */
 
-    float m_beatOffset; /**< Scene music start offset */
-    float m_bpm; /**< Scene music's beats per minute */
+    double m_beatOffset; /**< Scene music start offset */
+    double m_bpm; /**< Scene music's beats per minute */
 
     std::shared_ptr<EditorModel> m_AllCurvesEditor; /**< Editor model containing all curves */
     std::shared_ptr<EditorModel> m_SelectedCurvesEditor; /**< Editor model containing selected curves */

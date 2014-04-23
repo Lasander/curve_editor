@@ -215,8 +215,8 @@ void saveCurves(QList<std::shared_ptr<CurveModel>> curves)
 
 SceneModel::SceneModel(RangeF timeRange)
   : m_timeRange(timeRange),
-    m_beatOffset(0.0f),
-    m_bpm(80.0f), // Default to 80bpm
+    m_beatOffset(0.0),
+    m_bpm(80.0), // Default to 80bpm
     m_AllCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm)),
     m_SelectedCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm))
 {
@@ -224,10 +224,14 @@ SceneModel::SceneModel(RangeF timeRange)
     connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
     connect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
     connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
+    connect(this, &SceneModel::beatOffsetChanged, m_AllCurvesEditor.get(), &EditorModel::setBeatOffset);
+    connect(this, &SceneModel::bpmChanged, m_AllCurvesEditor.get(), &EditorModel::setBpm);
 
     connect(this, &SceneModel::curveSelected, m_SelectedCurvesEditor.get(), &EditorModel::addCurve);
     connect(this, &SceneModel::curveDeselected, m_SelectedCurvesEditor.get(), &EditorModel::removeCurve);
     connect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
+    connect(this, &SceneModel::beatOffsetChanged, m_SelectedCurvesEditor.get(), &EditorModel::setBeatOffset);
+    connect(this, &SceneModel::bpmChanged, m_SelectedCurvesEditor.get(), &EditorModel::setBpm);
 }
 
 SceneModel::~SceneModel()
@@ -245,12 +249,12 @@ const RangeF SceneModel::timeRange() const
     return m_timeRange;
 }
 
-float SceneModel::beatOffset() const
+double SceneModel::beatOffset() const
 {
     return m_beatOffset;
 }
 
-float SceneModel::beatsPerMinute() const
+double SceneModel::bpm() const
 {
     return m_bpm;
 }
@@ -337,7 +341,7 @@ void SceneModel::setTimeRange(RangeF newTimeRange)
     }
 }
 
-void SceneModel::setBeatOffset(float beatOffset)
+void SceneModel::setBeatOffset(double beatOffset)
 {
     if (m_beatOffset != beatOffset)
     {
@@ -346,7 +350,7 @@ void SceneModel::setBeatOffset(float beatOffset)
     }
 }
 
-void SceneModel::setBpm(float bpm)
+void SceneModel::setBpm(double bpm)
 {
     if (m_bpm != bpm)
     {

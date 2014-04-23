@@ -30,7 +30,7 @@ public:
      * @param bpm Initial bpm
      * @param parent Parent item
      */
-    BeatLinesView(RangeF timeRange, float timeScale, float beatOffset, float bpm, QGraphicsItem* parent);
+    BeatLinesView(RangeF timeRange, float timeScale, double beatOffset, double bpm, QGraphicsItem* parent);
     ~BeatLinesView();
 
 public slots:
@@ -48,20 +48,20 @@ public slots:
      * @brief Update beat offset
      * @param beatOffset New beat offset
      */
-    void setBeatOffset(float beatOffset);
+    void setBeatOffset(double beatOffset);
     /**
      * @brief Update bpm
      * @param bpm New bpm
      */
-    void setBpm(float bpm);
+    void setBpm(double bpm);
 
 private:
     void updateBeatLines();
 
     RangeF m_timeRange; ///< Time range [start, end]
     float m_timeScale; ///< Time scale affecting how detailed beat lines to draw
-    float m_beatOffset; ///< Offset to the first beat
-    float m_bpm; ///< Beats per minute
+    double m_beatOffset; ///< Offset to the first beat
+    double m_bpm; ///< Beats per minute
 
     class BeatLineView;
     QList<std::shared_ptr<BeatLineView>> m_beatLines;
