@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QTableWidget>
 #include <QGridLayout>
+#include <QDoubleSpinBox>
 
 class PointPropertiesWidget : public QWidget
 {
@@ -74,11 +75,30 @@ public:
         m_gridLayout(new QGridLayout()),
         m_sceneModel(sceneModel)
     {
+        QVBoxLayout* vboxLayout = new QVBoxLayout(this);
+        vboxLayout->addLayout(m_gridLayout);
+
+        QDoubleSpinBox* beatOffset = new QDoubleSpinBox(this);
+        beatOffset->setSuffix(" s");
+        beatOffset->setRange(-60, 60);
+        beatOffset->setSingleStep(0.2);
+        beatOffset->setValue(m_sceneModel->beatOffset());
+        vboxLayout->addWidget(beatOffset);
+        connect(beatOffset, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
+
+        QDoubleSpinBox* bpm = new QDoubleSpinBox(this);
+        bpm->setSuffix(" bpm");
+        bpm->setRange(10, 360);
+        bpm->setSingleStep(0.2);
+        bpm->setValue(m_sceneModel->bpm());
+        vboxLayout->addWidget(bpm);
+        connect(bpm, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
+
         connect(m_sceneModel.get(), &SceneModel::curveAdded, this, &ScenePropertiesWidget::addCurve);
         for (auto curve : m_sceneModel->curves())
             addCurve(curve);
 
-        this->setLayout(m_gridLayout);
+        this->setLayout(vboxLayout);
     }
 
     ~ScenePropertiesWidget()
@@ -121,7 +141,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_sceneModel->addCurve(c2);
 
     m_sceneModel->selectCurve(c2);
-    m_sceneModel->setBpm(20);
+    m_sceneModel->setBpm(60);
 
     QVBoxLayout* layout = new QVBoxLayout;
     layout->addWidget(new EditorView(m_sceneModel->getAllCurvesEditor()));
