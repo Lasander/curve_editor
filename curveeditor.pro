@@ -30,7 +30,8 @@ SOURCES += \
     ScrollPositionKeeper.cpp \
     TransformationNode.cpp \
     pt/math/cubic_hermite_spline.inl \
-    SceneModel.cpp
+    SceneModel.cpp \
+    BeatLinesView.cpp
 
 HEADERS  += \
     CurveModel.h \
@@ -50,4 +51,5 @@ HEADERS  += \
     pt/math/cubic_hermite_spline.h \
     pt/math/kb_data_set.h \
     pt/math/kb_spline.h \
-    SceneModel.h
+    SceneModel.h \
+    BeatLinesView.h
