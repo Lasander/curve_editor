@@ -38,6 +38,19 @@ public slots:
         ++timeRangeChangeCount;
     }
 
+    void beatOffsetChanged(double beatOffset)
+    {
+        lastBeatOffset = beatOffset;
+        ++beatOffsetChangedCount;
+    }
+
+    void bpmChanged(double bpm)
+    {
+        lastBpm = bpm;
+        ++bpmChangedCount;
+    }
+
+
 public:
     std::shared_ptr<CurveModel> lastAdded;
     int addedCount;
@@ -51,6 +64,11 @@ public:
 
     RangeF lastTimeRange;
     int timeRangeChangeCount;
+
+    double lastBeatOffset;
+    int beatOffsetChangedCount;
+    double lastBpm;
+    int bpmChangedCount;
 
     void reset()
     {
@@ -66,6 +84,11 @@ public:
 
         lastTimeRange = RangeF();
         timeRangeChangeCount = 0;
+
+        lastBeatOffset = 0.0;
+        beatOffsetChangedCount = 0;
+        lastBpm = 0.0;
+        bpmChangedCount = 0;
     }
 
     SceneTestReceiver(const SceneModel& scene)
@@ -77,6 +100,8 @@ public:
         connect(&scene, &SceneModel::curveSelected, this, &SceneTestReceiver::curveSelected);
         connect(&scene, &SceneModel::curveDeselected, this, &SceneTestReceiver::curveDeselected);
         connect(&scene, &SceneModel::timeRangeChanged, this, &SceneTestReceiver::timeRangeChanged);
+        connect(&scene, &SceneModel::beatOffsetChanged, this, &SceneTestReceiver::beatOffsetChanged);
+        connect(&scene, &SceneModel::bpmChanged, this, &SceneTestReceiver::bpmChanged);
     }
 
     ~SceneTestReceiver()

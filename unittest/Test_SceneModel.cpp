@@ -360,6 +360,42 @@ void Test_SceneModel::testTimeRange()
     QCOMPARE(model.timeRange(), curve2->timeRange()); // Note: This synchronization is responsibility of CurveModel
 }
 
+void Test_SceneModel::testBeat()
+{
+    SceneModel model;
+    SceneTestReceiver receiver(model);
+
+    // Initially default values
+    QCOMPARE(model.beatOffset(), 0.0);
+    QCOMPARE(model.bpm(), 80.0);
+    QCOMPARE(receiver.beatOffsetChangedCount, 0);
+    QCOMPARE(receiver.bpmChangedCount, 0);
+
+    // Set a valid offset
+    model.setBeatOffset(10.7);
+    QCOMPARE(model.beatOffset(), 10.7);
+    QCOMPARE(receiver.beatOffsetChangedCount, 1);
+    QCOMPARE(receiver.bpmChangedCount, 0);
+    QCOMPARE(receiver.lastBeatOffset, model.beatOffset());
+
+    // Set a valid bpm
+    model.setBpm(88.8);
+    QCOMPARE(model.bpm(), 88.8);
+    QCOMPARE(receiver.beatOffsetChangedCount, 1);
+    QCOMPARE(receiver.bpmChangedCount, 1);
+    QCOMPARE(receiver.lastBpm, model.bpm());
+
+    // Set another valid values
+    model.setBeatOffset(-1.5);
+    model.setBpm(60.2);
+    QCOMPARE(model.beatOffset(), -1.5);
+    QCOMPARE(model.bpm(), 60.2);
+    QCOMPARE(receiver.beatOffsetChangedCount, 2);
+    QCOMPARE(receiver.bpmChangedCount, 2);
+    QCOMPARE(receiver.lastBeatOffset, model.beatOffset());
+    QCOMPARE(receiver.lastBpm, model.bpm());
+}
+
 void Test_SceneModel::testStandardEditors()
 {
     SceneModel model;

@@ -15,6 +15,7 @@ private slots:
     void testCurveAddRemove();
     void testCurveSelection();
     void testTimeRange();
+    void testBeat();
     void testStandardEditors();
 };
 
