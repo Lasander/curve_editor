@@ -2,6 +2,7 @@
 
 #include "Test_CurveModel.h"
 #include "Test_SceneModel.h"
+#include "Test_EditorModel.h"
 
 int main()
 {
@@ -11,6 +12,10 @@ int main()
     }
     {
         Test_SceneModel test;
+        QTest::qExec(&test);
+    }
+    {
+        Test_EditorModel test;
         QTest::qExec(&test);
     }
 

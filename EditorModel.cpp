@@ -41,22 +41,40 @@ double EditorModel::bpm() const
     return m_bpm;
 }
 
-void EditorModel::addCurve(std::shared_ptr<CurveModel> model)
+void EditorModel::addCurve(std::shared_ptr<CurveModel> curve)
 {
-    if (m_curves.contains(model))
+    if (!curve)
+    {
+        qWarning() << "Trying to add bad curve";
         return;
+    }
 
-    m_curves.push_back(model);
-    emit curveAdded(model);
+    if (m_curves.contains(curve))
+    {
+        qWarning() << "Trying to add duplicate curve:" << curve->name();
+        return;
+    }
+
+    m_curves.push_back(curve);
+    emit curveAdded(curve);
 }
 
-void EditorModel::removeCurve(std::shared_ptr<CurveModel> model)
+void EditorModel::removeCurve(std::shared_ptr<CurveModel> curve)
 {
-    int removed = m_curves.removeAll(model);
-    if (removed < 1)
+    if (!curve)
+    {
+        qWarning() << "Trying to remove bad curve";
         return;
+    }
 
-    emit curveRemoved(model);
+    int removed = m_curves.removeAll(curve);
+    if (removed < 1)
+    {
+        qWarning() << "Trying to remove non-existent curve:" << curve->name();
+        return;
+    }
+
+    emit curveRemoved(curve);
 }
 
 void EditorModel::clearCurves()

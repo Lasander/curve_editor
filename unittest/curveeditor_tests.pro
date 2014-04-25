@@ -20,12 +20,15 @@ SOURCES -= main.cpp
 SOURCES += maintest.cpp \
     UnitTestHelpers.cpp \
     Test_CurveModel.cpp \
-    Test_SceneModel.cpp
+    Test_SceneModel.cpp \
+    Test_EditorModel.cpp
 
 HEADERS += \
     UnitTestHelpers.h \
     Test_CurveModel.h \
     CurveTestReceiver.h \
     Test_SceneModel.h \
-    SceneTestReceiver.h
+    SceneTestReceiver.h \
+    Test_EditorModel.h \
+    EditorTestReceiver.h
 
