@@ -4,7 +4,6 @@
 #include "EditorModel.h"
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
-#include <QFileDialog>
 #include <QDebug>
 
 ///////////////////////////////////////
@@ -93,36 +92,23 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
     return nullptr;
 }
 
-QList<std::shared_ptr<CurveModel>> loadCurves()
+QList<std::shared_ptr<CurveModel>> loadCurves(QXmlStreamReader& stream)
 {
     QList<std::shared_ptr<CurveModel>> curves;
 
-    QString fileName = QFileDialog::getOpenFileName(nullptr, "Open curves XML", QString(), "All Files (*);;XML Files (*.xml)");
-    if (!fileName.isEmpty())
+    while (!stream.atEnd())
     {
-        QFile file(fileName);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        stream.readNext();
+        if (stream.isStartElement() && stream.name().contains("catmull_rom", Qt::CaseSensitive))
         {
-            qDebug() << "Failed to open file:" << file.errorString();
-            return curves;
+            std::shared_ptr<CurveModel> newCurve = createCurve(stream);
+            if (newCurve)
+                curves.append(newCurve);
         }
-
-        QXmlStreamReader stream(&file);
-
-        while (!stream.atEnd())
-        {
-            stream.readNext();
-            if (stream.isStartElement() && stream.name().contains("catmull_rom", Qt::CaseSensitive))
-            {
-                std::shared_ptr<CurveModel> newCurve = createCurve(stream);
-                if (newCurve)
-                    curves.append(newCurve);
-            }
-        }
-        if (stream.hasError())
-        {
-            qDebug() << "Error "<< stream.error() << "at (" << stream.lineNumber() << ":" << stream.columnNumber() << ") " << stream.errorString();
-        }
+    }
+    if (stream.hasError())
+    {
+        qDebug() << "Error "<< stream.error() << "at (" << stream.lineNumber() << ":" << stream.columnNumber() << ") " << stream.errorString();
     }
 
     return curves;
@@ -190,24 +176,6 @@ bool serializeCurves(QList<std::shared_ptr<CurveModel>> curves, QXmlStreamWriter
     return true;
 }
 
-void saveCurves(QList<std::shared_ptr<CurveModel>> curves)
-{
-    QString fileName = QFileDialog::getSaveFileName(nullptr, "Save curves XML", QString(), "All Files (*);;XML Files (*.xml)");
-    if (!fileName.isEmpty())
-    {
-        QFile file(fileName);
-        if (!file.open(QIODevice::WriteOnly  | QIODevice::Text | QIODevice::Truncate))
-        {
-            qDebug() << "Failed to open file:" << file.errorString();
-            return;
-        }
-
-        QXmlStreamWriter stream(&file);
-        serializeCurves(curves, stream);
-    }
-}
-
-
 ///////////////////////////////////////
 ///////////////////////////////////////
 ///////////////////////////////////////
@@ -218,7 +186,8 @@ SceneModel::SceneModel(RangeF timeRange)
     m_beatOffset(0.0),
     m_bpm(80.0), // Default to 80bpm
     m_AllCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm)),
-    m_SelectedCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm))
+    m_SelectedCurvesEditor(new EditorModel(m_timeRange, m_beatOffset, m_bpm)),
+    m_fileName() // No filename by default
 {
     // Connect standard editors
     connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
@@ -234,9 +203,20 @@ SceneModel::SceneModel(RangeF timeRange)
     connect(this, &SceneModel::bpmChanged, m_SelectedCurvesEditor.get(), &EditorModel::setBpm);
 }
 
+std::shared_ptr<SceneModel> SceneModel::create(QXmlStreamReader& stream)
+{
+    std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(RangeF(0, 100));
+
+    Container newCurves = ::loadCurves(stream);
+    for (auto &curve : newCurves)
+        sceneModel->addCurve(curve);
+
+    return sceneModel;
+}
+
 SceneModel::~SceneModel()
 {
-    // Editors are disconnect automatically
+    // Editors are disconnected automatically
 }
 
 QList<std::shared_ptr<CurveModel>> SceneModel::curves() const
@@ -259,14 +239,19 @@ double SceneModel::bpm() const
     return m_bpm;
 }
 
-std::shared_ptr<EditorModel> SceneModel::getAllCurvesEditor()
+std::shared_ptr<EditorModel> SceneModel::getAllCurvesEditor() const
 {
     return m_AllCurvesEditor;
 }
 
-std::shared_ptr<EditorModel> SceneModel::getSelectedCurvesEditor()
+std::shared_ptr<EditorModel> SceneModel::getSelectedCurvesEditor() const
 {
     return m_SelectedCurvesEditor;
+}
+
+const QString& SceneModel::fileName() const
+{
+    return m_fileName;
 }
 
 void SceneModel::addCurve(std::shared_ptr<CurveModel> curve)
@@ -409,14 +394,15 @@ void SceneModel::curveSelectionChanged(bool status)
     qWarning() << "Manual selection change notification from unknown curve" << status;
 }
 
-void SceneModel::saveCurves()
+void SceneModel::serialize(QXmlStreamWriter& stream)
 {
-    ::saveCurves(m_curves);
+    // TODO: Serialize scene data
+
+    // Serialize curves
+    serializeCurves(m_curves, stream);
 }
 
-void SceneModel::loadCurves()
+void SceneModel::setFileName(const QString& fileName)
 {
-    Container newCurves = ::loadCurves();
-    for (auto &curve : newCurves)
-        addCurve(curve);
+    m_fileName = fileName;
 }

@@ -10,6 +10,7 @@
 #include <QMenu>
 #include <QMenuBar>
 
+#include <QAction>
 #include <QWidget>
 #include <QSlider>
 #include <QDockWidget>
@@ -18,6 +19,9 @@
 #include <QTableWidget>
 #include <QGridLayout>
 #include <QDoubleSpinBox>
+#include <QFileDialog>
+#include <QXmlStreamReader>
+#include <QXmlStreamWriter>
 
 class PointPropertiesWidget : public QWidget
 {
@@ -70,33 +74,28 @@ private:
 class ScenePropertiesWidget : public QWidget
 {
 public:
-    ScenePropertiesWidget(std::shared_ptr<SceneModel> sceneModel, QWidget * parent = 0)
+    ScenePropertiesWidget(QWidget * parent = 0)
     :	QWidget(parent),
-        m_gridLayout(new QGridLayout()),
-        m_sceneModel(sceneModel)
+        m_gridLayout(new QGridLayout())
     {
         QVBoxLayout* vboxLayout = new QVBoxLayout(this);
         vboxLayout->addLayout(m_gridLayout);
 
-        QDoubleSpinBox* beatOffset = new QDoubleSpinBox(this);
-        beatOffset->setSuffix(" s");
-        beatOffset->setRange(-60, 60);
-        beatOffset->setSingleStep(0.2);
-        beatOffset->setValue(m_sceneModel->beatOffset());
-        vboxLayout->addWidget(beatOffset);
-        connect(beatOffset, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
+        m_beatOffsetSpinner = new QDoubleSpinBox(this);
+        m_beatOffsetSpinner->setSuffix(" s");
+        m_beatOffsetSpinner->setRange(-60, 60);
+        m_beatOffsetSpinner->setSingleStep(0.2);
+        m_beatOffsetSpinner->setValue(0);
+        m_beatOffsetSpinner->setEnabled(false);
+        vboxLayout->addWidget(m_beatOffsetSpinner);
 
-        QDoubleSpinBox* bpm = new QDoubleSpinBox(this);
-        bpm->setSuffix(" bpm");
-        bpm->setRange(10, 360);
-        bpm->setSingleStep(0.2);
-        bpm->setValue(m_sceneModel->bpm());
-        vboxLayout->addWidget(bpm);
-        connect(bpm, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
-
-        connect(m_sceneModel.get(), &SceneModel::curveAdded, this, &ScenePropertiesWidget::addCurve);
-        for (auto curve : m_sceneModel->curves())
-            addCurve(curve);
+        m_bpmSpinner= new QDoubleSpinBox(this);
+        m_bpmSpinner->setSuffix(" bpm");
+        m_bpmSpinner->setRange(10, 360);
+        m_bpmSpinner->setSingleStep(0.2);
+        m_bpmSpinner->setValue(80);
+        m_bpmSpinner->setEnabled(false);
+        vboxLayout->addWidget(m_bpmSpinner);
 
         this->setLayout(vboxLayout);
     }
@@ -105,58 +104,115 @@ public:
     {
     }
 
-public slots:
-    void addCurve(std::shared_ptr<CurveModel> curve)
+    void setSceneModel(std::shared_ptr<SceneModel> sceneModel)
     {
-        QLabel* nameLabel = new QLabel(curve->name());
-        m_gridLayout->addWidget(nameLabel, m_gridLayout->rowCount(), 0);
+        if (m_sceneModel == sceneModel)
+        {
+            return;
+        }
+
+        if (m_sceneModel)
+        {
+//            const int numberOfCurves = m_gridLayout->count();
+//            for (int i = 0; i < numberOfCurves; ++i)
+//            {
+//                m_gridLayout->removeItem(m_gridLayout->itemAt(i));
+//            }
+
+            disconnect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
+            disconnect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
+//            disconnect(m_sceneModel.get(), &SceneModel::curveAdded, this, &ScenePropertiesWidget::addCurve);
+
+            m_beatOffsetSpinner->setEnabled(false);
+            m_bpmSpinner->setEnabled(false);
+        }
+
+        m_sceneModel = sceneModel;
+
+        if (m_sceneModel)
+        {
+            connect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
+            connect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
+
+            m_beatOffsetSpinner->setValue(m_sceneModel->beatOffset());
+            m_beatOffsetSpinner->setEnabled(true);
+
+            m_bpmSpinner->setValue(m_sceneModel->bpm());
+            m_bpmSpinner->setEnabled(true);
+
+//            connect(m_sceneModel.get(), &SceneModel::curveAdded, this, &ScenePropertiesWidget::addCurve);
+//            for (auto curve : m_sceneModel->curves())
+//                addCurve(curve);
+        }
+
+    }
+
+public slots:
+    void addCurve(std::shared_ptr<CurveModel> /*curve*/)
+    {
+        // TODO:
+//        QLabel* nameLabel = new QLabel(curve->name());
+//        m_gridLayout->addWidget(nameLabel, m_gridLayout->rowCount(), 0);
+    }
+
+    void removeCurve(std::shared_ptr<CurveModel> /*curve*/)
+    {
+        // TODO:
     }
 
 private:
     QGridLayout* m_gridLayout;
     std::shared_ptr<SceneModel> m_sceneModel;
-};
 
+    QDoubleSpinBox* m_beatOffsetSpinner;
+    QDoubleSpinBox* m_bpmSpinner;
+};
 
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent),
-    m_sceneModel(std::make_shared<SceneModel>(RangeF(0, 100)))
+    m_centralWidget(new QWidget)
 {
-    qsrand(QTime::currentTime().msec());
-    
-    auto c1 = std::make_shared<CurveModel>(2, "First");
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    
-    auto c2 = std::make_shared<CurveModel>(1, "Second");
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    // Initialize central widget
+    setCentralWidget(m_centralWidget);
 
-    m_sceneModel->addCurve(c1);
-    m_sceneModel->addCurve(c2);
+    // Initialize scene action
+    m_newSceneAction = new QAction(tr("New scene"), this);
+    m_newSceneAction->setShortcut(QKeySequence::New);
+    m_newSceneAction->setStatusTip(tr("Open a new empty scene"));
+    connect(m_newSceneAction, SIGNAL(triggered()), this, SLOT(newScene()));
 
-    m_sceneModel->selectCurve(c2);
-    m_sceneModel->setBpm(60);
+    m_openSceneAction = new QAction(tr("Open scene"), this);
+    m_openSceneAction->setShortcut(QKeySequence::Open);
+    m_openSceneAction->setStatusTip(tr("Open an existing scene"));
+    connect(m_openSceneAction, SIGNAL(triggered()), this, SLOT(openScene()));
 
-    QVBoxLayout* layout = new QVBoxLayout;
-    layout->addWidget(new EditorView(m_sceneModel->getAllCurvesEditor()));
-    layout->addWidget(new EditorView(m_sceneModel->getSelectedCurvesEditor()));
-    
-    QWidget* widget = new QWidget;
-    widget->setLayout(layout);
-    setCentralWidget(widget);
-    
-    this->resize(1200, 500);
-    
+    m_saveSceneAction = new QAction(tr("Save scene"), this);
+    m_saveSceneAction->setShortcut(QKeySequence::Save);
+    m_saveSceneAction->setStatusTip(tr("Save current scene"));
+    connect(m_saveSceneAction, SIGNAL(triggered()), this, SLOT(saveScene()));
+
+    m_saveSceneAsAction = new QAction(tr("Save scene as"), this);
+    m_saveSceneAsAction->setShortcut(QKeySequence::SaveAs);
+    m_saveSceneAsAction->setStatusTip(tr("Save current scene with a new name"));
+    connect(m_saveSceneAsAction, SIGNAL(triggered()), this, SLOT(saveSceneAs()));
+
+    m_closeSceneAction = new QAction(tr("Close scene"), this);
+    m_closeSceneAction->setShortcut(QKeySequence::Close);
+    m_closeSceneAction->setStatusTip(tr("Close current scene with a new name"));
+    connect(m_closeSceneAction, SIGNAL(triggered()), this, SLOT(closeScene()));
+
+    updateSceneActionStates();
+
+    // Create file menu
     QMenu* fileMenu = menuBar()->addMenu("&File");
-    fileMenu->addAction("Load curves", m_sceneModel.get(), SLOT(loadCurves()));
-    fileMenu->addAction("Save curves", m_sceneModel.get(), SLOT(saveCurves()));
-    
+    fileMenu->addAction(m_newSceneAction);
+    fileMenu->addAction(m_openSceneAction);
+    fileMenu->addAction(m_saveSceneAction);
+    fileMenu->addAction(m_saveSceneAsAction);
+    fileMenu->addAction(m_closeSceneAction);
+
+    // Add dock widgets
     QDockWidget* pointDockWidget = new QDockWidget(tr("Point properties"), this);
     pointDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     pointDockWidget->setWidget(new PointPropertiesWidget);
@@ -164,13 +220,239 @@ MainWindow::MainWindow(QWidget *parent)
 
     QDockWidget* sceneDockWidget = new QDockWidget(tr("Scene sproperties"), this);
     sceneDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    ScenePropertiesWidget* sceneProperties = new ScenePropertiesWidget(m_sceneModel);
-
-    sceneDockWidget->setWidget(sceneProperties);
+    m_sceneProperties = new ScenePropertiesWidget;
+    sceneDockWidget->setWidget(m_sceneProperties);
     addDockWidget(Qt::LeftDockWidgetArea, sceneDockWidget);
+
+    this->resize(1200, 500);
 }
 
 MainWindow::~MainWindow()
 {
-
 }
+
+void MainWindow::newScene()
+{
+    qDebug() << "New scene";
+
+    if (m_sceneModel)
+    {
+        qWarning() << "Cannot make new scene when old is still open";
+        return;
+    }
+
+    // Create test scene with some curves
+    qsrand(QTime::currentTime().msec());
+
+    auto c1 = std::make_shared<CurveModel>(2, "First");
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+
+    auto c2 = std::make_shared<CurveModel>(1, "Second");
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+
+    m_sceneModel = std::make_shared<SceneModel>(RangeF(0, 100));
+    m_sceneModel->addCurve(c1);
+    m_sceneModel->addCurve(c2);
+    m_sceneModel->selectCurve(c2);
+    m_sceneModel->setBpm(60);
+    m_sceneProperties->setSceneModel(m_sceneModel);
+
+    EditorView* allCurvesEditorView = new EditorView(m_sceneModel->getAllCurvesEditor());
+    m_editors.push_back(allCurvesEditorView);
+    EditorView* selectedCurvesEditorView = new EditorView(m_sceneModel->getSelectedCurvesEditor());
+    m_editors.push_back(selectedCurvesEditorView);
+
+    m_editorContainer = new QVBoxLayout;
+    m_editorContainer->addWidget(allCurvesEditorView);
+    m_editorContainer->addWidget(selectedCurvesEditorView);
+    m_centralWidget->setLayout(m_editorContainer);
+
+    updateSceneActionStates();
+}
+
+void MainWindow::openScene()
+{
+    qDebug() << "Open scene";
+
+    if (m_sceneModel)
+    {
+        qWarning() << "Cannot make open scene when old is still open";
+        return;
+    }
+
+    QString fileName = promptForSceneOpenFile();
+
+    // Should have a name now
+    if (fileName.isEmpty())
+    {
+        qWarning() << "No file name for scene, unable to open";
+        return;
+    }
+
+    // Open file for reading
+    QFile sceneFile(fileName);
+    if (!sceneFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        qWarning() << "Failed to open file:" << sceneFile.errorString();
+        return;
+    }
+
+    QXmlStreamReader stream(&sceneFile);
+    m_sceneModel = SceneModel::create(stream);
+
+    if (!m_sceneModel)
+    {
+        qWarning() << "Failed to open scene from file:" << fileName;
+        return;
+    }
+    m_sceneModel->setFileName(fileName);
+    m_sceneProperties->setSceneModel(m_sceneModel);
+
+    EditorView* allCurvesEditorView = new EditorView(m_sceneModel->getAllCurvesEditor());
+    m_editors.push_back(allCurvesEditorView);
+    EditorView* selectedCurvesEditorView = new EditorView(m_sceneModel->getSelectedCurvesEditor());
+    m_editors.push_back(selectedCurvesEditorView);
+
+    m_editorContainer = new QVBoxLayout;
+    m_editorContainer->addWidget(allCurvesEditorView);
+    m_editorContainer->addWidget(selectedCurvesEditorView);
+    m_centralWidget->setLayout(m_editorContainer);
+
+    updateSceneActionStates();
+}
+
+void MainWindow::saveScene()
+{
+    qDebug() << "Save scene";
+
+    if (!m_sceneModel)
+    {
+        qWarning() << "No scene, unable to save";
+        return;
+    }
+
+    if (m_sceneModel->fileName().isEmpty())
+    {
+        // No file yet, prompt for it
+        m_sceneModel->setFileName(promptForSceneSaveFile());
+    }
+
+    // Should have a name now
+    if (m_sceneModel->fileName().isEmpty())
+    {
+        qWarning() << "No file name for scene, unable to save";
+        return;
+    }
+
+    // Open the file
+    QFile sceneFile(m_sceneModel->fileName());
+    if (!sceneFile.open(QIODevice::WriteOnly  | QIODevice::Text | QIODevice::Truncate))
+    {
+        qWarning() << "Failed to open file for saving:" << sceneFile.errorString();
+        return;
+    }
+
+    // Serialize the scene
+    QXmlStreamWriter stream(&sceneFile);
+    m_sceneModel->serialize(stream);
+}
+
+void MainWindow::saveSceneAs()
+{
+    qDebug() << "Save scene as";
+
+    if (!m_sceneModel)
+    {
+        qWarning() << "No scene, unable to save";
+        return;
+    }
+
+    // Prompt for new scene file name
+    QString newSceneFileName = promptForSceneSaveFile();
+    if (newSceneFileName.isEmpty())
+    {
+        qWarning() << "No new file name for scene, unable to save as";
+        return;
+    }
+
+    // Apply new file name and save
+    m_sceneModel->setFileName(newSceneFileName);
+    saveScene();
+}
+
+namespace {
+QString g_promptTitle("Select scene file name");
+QString g_filters("Scene XML Files (*.xml);;All Files (*.*)");
+QString g_defaultFilter("Scene XML Files (*.xml)");
+} // anonymous namespace
+
+QString MainWindow::promptForSceneOpenFile()
+{
+    return QFileDialog::getOpenFileName(this, g_promptTitle, QString(), g_filters, &g_defaultFilter);
+}
+
+
+QString MainWindow::promptForSceneSaveFile()
+{
+    return QFileDialog::getSaveFileName(this, g_promptTitle, QString(), g_filters, &g_defaultFilter);
+}
+
+void MainWindow::closeScene()
+{
+    qDebug() << "Close scene";
+
+    if (!m_sceneModel)
+    {
+        qWarning() << "No scene, unable to close";
+        return;
+    }
+
+    // Remove all editors from the layout containing them
+    for (auto editor : m_editors)
+    {
+        m_editorContainer->removeWidget(editor);
+        // After removal the ownership is here again, delete the editor view
+        delete editor;
+    }
+    m_editors.clear();
+
+    // Delete the layout
+    delete m_editorContainer;
+    m_editorContainer = nullptr;
+
+    // Delete scene
+    m_sceneModel.reset();
+    m_sceneProperties->setSceneModel(m_sceneModel);
+
+    updateSceneActionStates();
+}
+
+void MainWindow::updateSceneActionStates()
+{
+    if (m_sceneModel)
+    {
+        // We have an existing scene, allow saving and closing
+        m_newSceneAction->setEnabled(false);
+        m_openSceneAction->setEnabled(false);
+        m_saveSceneAction->setEnabled(true);
+        // Allow to save as if wa have previously saved
+        m_saveSceneAsAction->setEnabled(m_sceneModel->fileName().isEmpty());
+        m_closeSceneAction->setEnabled(true);
+    }
+    else
+    {
+        // We don't have an existing scene, allow new and open
+        m_newSceneAction->setEnabled(true);
+        m_openSceneAction->setEnabled(true);
+        m_saveSceneAction->setEnabled(false);
+        m_saveSceneAsAction->setEnabled(false);
+        m_closeSceneAction->setEnabled(false);
+    }
+}
+

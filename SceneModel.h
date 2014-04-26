@@ -16,6 +16,11 @@
 class CurveModel;
 class EditorModel;
 
+QT_BEGIN_NAMESPACE
+class QXmlStreamReader;
+class QXmlStreamWriter;
+QT_END_NAMESPACE
+
 /**
  * @brief Scene model repesenting a collection of curves within the same time frame.
  *
@@ -34,6 +39,13 @@ public:
     /** @brief Destructor. */
     ~SceneModel();
 
+    /**
+     * @brief Deserialize new scenemodel from xml stream.
+     * @param stream The stream
+     * @return Deserialized scene model or null object if creation failed
+     */
+    static std::shared_ptr<SceneModel> create(QXmlStreamReader& stream);
+
     /** @return Curves contained in this scene. */
     QList<std::shared_ptr<CurveModel>> curves() const;
 
@@ -46,9 +58,12 @@ public:
     double bpm() const;
 
     /** @return An editor model that will contain all curves in the scene. */
-    std::shared_ptr<EditorModel> getAllCurvesEditor();
+    std::shared_ptr<EditorModel> getAllCurvesEditor() const;
     /** @return An editor model that will contain selected curves in the scene. */
-    std::shared_ptr<EditorModel> getSelectedCurvesEditor();
+    std::shared_ptr<EditorModel> getSelectedCurvesEditor() const;
+
+    /** @return File name associated with the scene. */
+    const QString& fileName() const;
 
 signals:
     /** @brief A curve wad added to the scene. */
@@ -110,18 +125,16 @@ public slots:
     void deselectCurve(std::shared_ptr<CurveModel> curve);
 
     /**
-     * @brief Save scene curves to xml.
-     *
-     * A file save dialog is opened to select the output file.
+     * @brief Serialize scene to xml.
+     * @param stream Xml output stream
      */
-    void saveCurves();
+    void serialize(QXmlStreamWriter& stream);
 
     /**
-     * @brief Load xml curves to scene.
-     *
-     * A file open dialog is opened to select the input file.
+     * @brief Set file name for the scene
+     * @param fileName File name
      */
-    void loadCurves();
+    void setFileName(const QString& fileName);
 
 private slots:
     /**
@@ -145,6 +158,8 @@ private:
 
     std::shared_ptr<EditorModel> m_AllCurvesEditor; /**< Editor model containing all curves */
     std::shared_ptr<EditorModel> m_SelectedCurvesEditor; /**< Editor model containing selected curves */
+
+    QString m_fileName; /**< File name associated with this scene */
 };
 
 #endif // __CurveEditor__SceneModel__
