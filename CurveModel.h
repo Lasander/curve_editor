@@ -18,6 +18,13 @@
 using PointId = int32_t;
 
 /**
+ * @brief Check point if validity
+ * @param pointId Id
+ * @return True if the id is valid
+ */
+bool isValid(PointId pointId);
+
+/**
  * CurveModel represents a (potentially multi-dimensional) curve as its control points.
  * Derived from QObject for signals and slots.
  */
@@ -58,8 +65,10 @@ public:
         bool operator==(Point const& other) const;
         bool operator!=(Point const& other) const;
         
-        /** @brief Generator for unique point id's */
+        /** @return New unique point id's */
         static PointId generateId();
+        /** @return Invalid point id */
+        static PointId invalidId();
 
         // Allow curve to create points
         friend class CurveModel;
@@ -87,6 +96,13 @@ public:
 
     /** @return A list of point ids. */
     QList<PointId> pointIds() const;
+
+    /**
+     * @brief Retrieve next point id from the given one.
+     * @param id Original point
+     * @return Point id for the next point or invalid if none found
+     */
+    PointId nextPointId(PointId id) const;
     
     /**
      * @return Copy of a point with the given id. In case an invalid or

@@ -102,7 +102,7 @@ void EditorView::curveAdded(std::shared_ptr<CurveModel> curve)
     Iterator existing = m_curveViews.find(curve);
     assert(existing == m_curveViews.end());
     
-  	m_curveViews.insert(curve, new CurveView(m_sceneLayer, curve));
+    m_curveViews.insert(curve, new CurveView(curve, m_sceneLayer));
 }
 
 void EditorView::curveRemoved(std::shared_ptr<CurveModel> curve)

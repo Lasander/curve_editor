@@ -40,6 +40,16 @@ private:
 /////////////////////////////////////////
 /////////////////////////////////////////
 
+bool isValid(PointId pointId)
+{
+    // Zero is invalid
+    return pointId != 0;
+}
+
+/////////////////////////////////////////
+/////////////////////////////////////////
+
+
 CurveModel::Point::Point()
 :	m_is_valid(false), m_id(0), m_time(0), m_values({0}),
 	m_tension(0), m_bias(0), m_continuity(0)
@@ -77,6 +87,10 @@ PointId CurveModel::Point::generateId()
     return id;
 }
 
+PointId CurveModel::Point::invalidId()
+{
+    return 0;
+}
 
 /////////////////////////////////////////
 /////////////////////////////////////////
@@ -102,6 +116,26 @@ QList<PointId> CurveModel::pointIds() const
         output.push_back(p.id());
     
     return std::move(output);
+}
+
+PointId CurveModel::nextPointId(PointId id) const
+{
+    ConstIterator it = findPoint(id);
+    if (it == m_points.end())
+    {
+        qWarning() << "Trying to get for unknown point id:" << id;
+        return Point::invalidId();
+    }
+
+    // Get next
+    ++it;
+    if (it == m_points.end())
+    {
+        // No next point
+        return Point::invalidId();
+    }
+
+    return it->id();
 }
 
 const CurveModel::Point CurveModel::point(PointId id) const

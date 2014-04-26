@@ -14,7 +14,7 @@
 #include <QPen>
 #include <assert.h>
 
-CurveView::CurveView(QGraphicsItem* parent, std::shared_ptr<CurveModel> model)
+CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 :   TransformationNode(parent),
 	m_model(model)
 {
@@ -132,7 +132,26 @@ void CurveView::duplicateSelectedPoints()
     for (auto pid : toBeDuplicated)
     {
         const CurveModel::Point point = m_model->point(pid);
-        m_model->addPoint(point.time() + 10, point.values());
+
+        const PointId nextPointId = m_model->nextPointId(pid);
+        if (isValid(nextPointId))
+        {
+            // Add point to between this and the next point matching the curve value at that point
+            const CurveModel::Point nextPoint = m_model->point(nextPointId);
+            float insertTime = (point.time() + nextPoint.time()) / 2.0f;
+
+            QList<float> insertValues;
+            for (int dim = 0; dim < m_splines.size(); ++dim)
+            {
+                insertValues.push_back(m_splines[dim]->value_at(insertTime));
+            }
+            m_model->addPoint(insertTime, insertValues);
+        }
+        else
+        {
+            // Add point to +1 second from the original point with the same value(s)
+            m_model->addPoint(point.time() + 1.0, point.values());
+        }
     }
 }
 
@@ -251,12 +270,4 @@ bool CurveView::removeFromSpline(CurveModel::Point const& point)
 CurveView::SplineDataSet::const_iterator CurveView::findSplinePoint(CurveModel::Point const& point, int index)
 {
     return m_splines[index]->data().get_point(point.id());
-
-//    auto points = m_splines[index]->data().points_at(point.time());
-//    auto cur = points.first;
-//    auto next = points.second;
-//    if (next != m_splines[index]->data().end())
-//        return m_splines[index]->data().end();
-    
-//    return cur;
 }

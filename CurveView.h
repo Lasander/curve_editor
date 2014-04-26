@@ -16,8 +16,10 @@
 
 class PointView;
 
-/** View for potentially multi-dimensional curve.
- Y-axis (values) are scaled so they map to range [0, 1].
+/**
+ * View for potentially multi-dimensional curve.
+ * Time axis (x) is unscaled in this view.
+ * Valu axis (y) is scaled so the model value range [min, max] maps to range [0, 1].
  */
 class CurveView :
 	public QObject,
@@ -26,7 +28,12 @@ class CurveView :
     Q_OBJECT
     
 public:
-    CurveView(QGraphicsItem* parent, std::shared_ptr<CurveModel> model);
+    /**
+     * @brief Construct CurveView
+     * @param parent
+     * @param model
+     */
+    CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent);
     ~CurveView();
     
 public slots:
