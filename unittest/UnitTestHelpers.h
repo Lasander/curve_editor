@@ -5,6 +5,39 @@
 #include <QDebug>
 
 /**
+ * @brief Output message handler to suppress any debug prints.
+ *
+ * Singleton that can used through start/stop methods or by creating an instance
+ * which calls start on construction and stop on destruction.
+ *
+ * Scoped instance can be created using macro SUPPRESS_DEBUG_IN_SCOPE.
+ */
+class SuppressDebug
+{
+public:
+    /** @brief SuppressDebug instance will automatically start/stop the suppressing. */
+    SuppressDebug() { start(); }
+    ~SuppressDebug() { stop(); }
+
+    /** Start suppressing debug messages */
+    static void start();
+    /** Stop suppressing debug messages */
+    static void stop();
+
+    /**
+     * @brief The Previous handler.
+     * Public to allow easy access to the handler function. Shouldn't be used by clients of this class.
+     */
+    static QtMessageHandler s_prevHandler;
+
+private:
+    /** Flag to control the the handler is not installed multiple times (stacked) */
+    static bool s_isStarted;
+};
+
+#define SUPPRESS_DEBUG_IN_SCOPE SuppressDebug suppressDebug##__LINE__;
+
+/**
  * @brief Helper class to test that certain operation results in an error logging.
  *
  * The class is used through the EXPECT_ERRORS macro, which will create an instance
