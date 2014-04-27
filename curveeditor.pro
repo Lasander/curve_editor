@@ -31,7 +31,8 @@ SOURCES += \
     TransformationNode.cpp \
     pt/math/cubic_hermite_spline.inl \
     SceneModel.cpp \
-    BeatLinesView.cpp
+    BeatLinesView.cpp \
+    ScenePropertiesWidget.cpp
 
 HEADERS  += \
     CurveModel.h \
@@ -52,4 +53,5 @@ HEADERS  += \
     pt/math/kb_data_set.h \
     pt/math/kb_spline.h \
     SceneModel.h \
-    BeatLinesView.h
+    BeatLinesView.h \
+    ScenePropertiesWidget.h
