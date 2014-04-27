@@ -131,6 +131,12 @@ public slots:
     void serialize(QXmlStreamWriter& stream);
 
     /**
+     * @brief Serialize scene curves to xml.
+     * @param stream Xml output stream
+     */
+    void serializeCurves(QXmlStreamWriter& stream);
+
+    /**
      * @brief Set file name for the scene
      * @param fileName File name
      */

@@ -102,6 +102,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_closeSceneAction->setStatusTip(tr("Close current scene with a new name"));
     connect(m_closeSceneAction, SIGNAL(triggered()), this, SLOT(closeScene()));
 
+    m_exportCurvesAction = new QAction(tr("Export curves"), this);
+    m_exportCurvesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E)); // CTRL+E
+    m_exportCurvesAction->setStatusTip(tr("Save scene curves to a new file"));
+    connect(m_exportCurvesAction, SIGNAL(triggered()), this, SLOT(exportSceneCurves()));
+
     updateSceneActionStates();
 
     // Create file menu
@@ -111,6 +116,10 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu->addAction(m_saveSceneAction);
     fileMenu->addAction(m_saveSceneAsAction);
     fileMenu->addAction(m_closeSceneAction);
+
+    // Create curves menu
+    QMenu* curvesMenu = menuBar()->addMenu("&Curves");
+    curvesMenu->addAction(m_exportCurvesAction);
 
     // Add dock widgets
     QDockWidget* pointDockWidget = new QDockWidget(tr("Point properties"), this);
@@ -260,7 +269,12 @@ void MainWindow::saveScene()
 
     // Serialize the scene
     QXmlStreamWriter stream(&sceneFile);
+    stream.setAutoFormatting(true);
+    stream.writeStartDocument("1.0");
+
     m_sceneModel->serialize(stream);
+
+    stream.writeEndDocument();
 }
 
 void MainWindow::saveSceneAs()
@@ -288,8 +302,8 @@ void MainWindow::saveSceneAs()
 
 namespace {
 QString g_promptTitle("Select scene file name");
-QString g_filters("Scene XML Files (*.xml);;All Files (*.*)");
-QString g_defaultFilter("Scene XML Files (*.xml)");
+QString g_filters("XML Files (*.xml);;All Files (*.*)");
+QString g_defaultFilter("XML Files (*.xml)");
 } // anonymous namespace
 
 QString MainWindow::promptForSceneOpenFile()
@@ -333,6 +347,44 @@ void MainWindow::closeScene()
     updateSceneActionStates();
 }
 
+void MainWindow::exportSceneCurves()
+{
+    qDebug() << "Export scene curves";
+
+    if (!m_sceneModel)
+    {
+        qWarning() << "No scene, unable to export curves";
+        return;
+    }
+
+    // Prompt for new curve file name
+    static QString s_promptTitle("Select curves file name");
+    QString newCurveFileName = QFileDialog::getSaveFileName(this, s_promptTitle, QString(), g_filters, &g_defaultFilter);
+
+    if (newCurveFileName.isEmpty())
+    {
+        qWarning() << "No new file name for curves, unable to export";
+        return;
+    }
+
+    // Open the file
+    QFile curvesFile(newCurveFileName);
+    if (!curvesFile.open(QIODevice::WriteOnly  | QIODevice::Text | QIODevice::Truncate))
+    {
+        qWarning() << "Failed to open file for export:" << curvesFile.errorString();
+        return;
+    }
+
+    // Serialize the scene curves
+    QXmlStreamWriter stream(&curvesFile);
+    stream.setAutoFormatting(true);
+    stream.writeStartDocument("1.0");
+
+    m_sceneModel->serializeCurves(stream);
+
+    stream.writeEndDocument();
+}
+
 void MainWindow::updateSceneActionStates()
 {
     if (m_sceneModel)
@@ -344,6 +396,9 @@ void MainWindow::updateSceneActionStates()
         // Allow to save as if wa have previously saved
         m_saveSceneAsAction->setEnabled(m_sceneModel->fileName().isEmpty());
         m_closeSceneAction->setEnabled(true);
+
+        // Got scene, allow exporting curves
+        m_exportCurvesAction->setEnabled(true);
     }
     else
     {
@@ -353,6 +408,9 @@ void MainWindow::updateSceneActionStates()
         m_saveSceneAction->setEnabled(false);
         m_saveSceneAsAction->setEnabled(false);
         m_closeSceneAction->setEnabled(false);
+
+        // No scene, cannot export curves
+        m_exportCurvesAction->setEnabled(false);
     }
 }
 

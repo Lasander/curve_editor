@@ -28,6 +28,8 @@ public slots:
     void saveSceneAs();
     void closeScene();
 
+    void exportSceneCurves();
+
 private:
     /**
      * @brief Prompt for existing scene file name.
@@ -57,6 +59,8 @@ private:
     QAction* m_saveSceneAction;
     QAction* m_saveSceneAsAction;
     QAction* m_closeSceneAction;
+
+    QAction* m_exportCurvesAction;
 };
 
 #endif // MAINWINDOW_H

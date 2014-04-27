@@ -26,7 +26,6 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
 
     // Save element name
     QString elementName = stream.name().toString();
-    qDebug() << "Curve:" << elementName;
 
     // Parse item count
     QString temp = elementName;
@@ -40,10 +39,7 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
         return nullptr;
     }
 
-    auto curve = std::make_shared<CurveModel>(items, elementName);
-
-    QString name = stream.attributes().value("name").toString();
-    qDebug() << "Curve name:" << name;
+    auto curve = std::make_shared<CurveModel>(items, stream.attributes().value("name").toString());
 
     while (!stream.atEnd())
     {
@@ -56,11 +52,8 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
             }
         }
 
-        auto it = stream.attributes().cbegin();
-        for (; it < stream.attributes().cend(); ++it)
-        {
+        for (auto it = stream.attributes().cbegin(); it < stream.attributes().cend(); ++it)
             qDebug() << "Attribute: " << it->name() << "=" << it->value();
-        }
 
         if (stream.isStartElement() && stream.name() == "key")
         {
@@ -96,7 +89,7 @@ QList<std::shared_ptr<CurveModel>> loadCurves(QXmlStreamReader& stream)
 {
     QList<std::shared_ptr<CurveModel>> curves;
 
-    while (!stream.atEnd())
+    while (!stream.atEnd() || (stream.isEndElement() && stream.name().contains("curves")))
     {
         stream.readNext();
         if (stream.isStartElement() && stream.name().contains("catmull_rom", Qt::CaseSensitive))
@@ -106,41 +99,15 @@ QList<std::shared_ptr<CurveModel>> loadCurves(QXmlStreamReader& stream)
                 curves.append(newCurve);
         }
     }
-    if (stream.hasError())
-    {
-        qDebug() << "Error "<< stream.error() << "at (" << stream.lineNumber() << ":" << stream.columnNumber() << ") " << stream.errorString();
-    }
-
     return curves;
 }
-
 
 bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
 {
     int numberOfItems = curve->dimension();
 
-    stream.writeStartElement(QString((numberOfItems > 1) ? "catmull_rom%1" : "catmull_rom").arg(numberOfItems));
-    stream.writeAttribute("name", "MyCurve");
-
-    //    stream.writeStartElement("curve_editor");
-    //    {
-    //        stream.writeStartElement("color");
-    //        QXmlStreamAttributes colorAttr;
-    //        colorAttr.append("r", QString::number(color().red()));
-    //        colorAttr.append("g", QString::number(color().green()));
-    //        colorAttr.append("b", QString::number(color().blue()));
-    //        stream.writeAttributes(colorAttr);
-    //        stream.writeEndElement();
-    //    }
-    //    {
-    //        stream.writeStartElement("scale");
-    //        QXmlStreamAttributes scaleAttr;
-    //        scaleAttr.append("valueMin", QString::number(valueScaleMinM));
-    //        scaleAttr.append("valueMax", QString::number(valueScaleMaxM));
-    //        stream.writeAttributes(scaleAttr);
-    //        stream.writeEndElement();
-    //    }
-    //    stream.writeEndElement();
+    stream.writeStartElement((numberOfItems > 1) ? QString("catmull_rom%1").arg(numberOfItems) : "catmull_rom");
+    stream.writeAttribute("name", curve->name());
 
     for (auto id : curve->pointIds())
     {
@@ -157,22 +124,6 @@ bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
     }
 
     stream.writeEndElement();
-    return true;
-}
-
-
-bool serializeCurves(QList<std::shared_ptr<CurveModel>> curves, QXmlStreamWriter& stream)
-{
-    stream.setAutoFormatting(true);
-    stream.writeStartDocument("1.0");
-    stream.writeStartElement("curves");
-
-    for (auto &curve : curves)
-        if (!serializeCurve(curve, stream))
-            return false;
-
-    stream.writeEndElement();
-    stream.writeEndDocument();
     return true;
 }
 
@@ -205,11 +156,49 @@ SceneModel::SceneModel(RangeF timeRange)
 
 std::shared_ptr<SceneModel> SceneModel::create(QXmlStreamReader& stream)
 {
-    std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(RangeF(0, 100));
+    std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(RangeF());
 
-    Container newCurves = ::loadCurves(stream);
-    for (auto &curve : newCurves)
-        sceneModel->addCurve(curve);
+    while (!stream.atEnd())
+    {
+        stream.readNext();
+        if (stream.isStartElement() && stream.name().contains("timerange", Qt::CaseSensitive))
+        {
+            bool isValid = stream.attributes().value("valid").toString().compare("true") == 0;
+            if (isValid)
+            {
+                const QString strStart = stream.attributes().value("start").toString();
+                const QString strEnd = stream.attributes().value("end").toString();
+
+                const float start = strStart.toFloat(&isValid);
+                const float end = strEnd.toFloat(&isValid);
+
+                sceneModel->setTimeRange(isValid ? RangeF(start, end) : RangeF());
+            }
+        }
+        else if (stream.isStartElement() && stream.name().contains("music", Qt::CaseSensitive))
+        {
+            bool beatOffsetOk = false;
+            const double beatOffset = stream.attributes().value("firstBeatOffset").toString().toDouble(&beatOffsetOk);
+            if (beatOffsetOk)
+                sceneModel->setBeatOffset(beatOffset);
+
+            bool bpmOk = false;
+            const double bpm = stream.attributes().value("beatsPerMinute").toString().toDouble(&bpmOk);
+            if (bpmOk)
+                sceneModel->setBpm(bpm);
+        }
+        else if (stream.isStartElement() && stream.name().contains("curves", Qt::CaseSensitive))
+        {
+            Container newCurves = ::loadCurves(stream);
+            for (auto &curve : newCurves)
+                sceneModel->addCurve(curve);
+        }
+    }
+
+    if (stream.hasError())
+    {
+        qDebug() << "Error "<< stream.error() << "at (" << stream.lineNumber() << ":" << stream.columnNumber() << ") " << stream.errorString();
+    }
 
     return sceneModel;
 }
@@ -396,11 +385,48 @@ void SceneModel::curveSelectionChanged(bool status)
 
 void SceneModel::serialize(QXmlStreamWriter& stream)
 {
-    // TODO: Serialize scene data
+    // Serialize scene data
+    stream.writeStartElement("scene");
+    {
+        stream.writeStartElement("timerange");
+        stream.writeAttribute("valid", m_timeRange.isValid() ? "true" : "false");
+        if (m_timeRange.isValid())
+        {
+            stream.writeAttribute("start", QString("%1").arg(m_timeRange.min));
+            stream.writeAttribute("end", QString("%1").arg(m_timeRange.max));
+        }
+        stream.writeEndElement();
+    }
+    {
+        stream.writeStartElement("music");
+        stream.writeAttribute("firstBeatOffset", QString("%1").arg(m_beatOffset));
+        stream.writeAttribute("beatsPerMinute", QString("%1").arg(m_bpm));
+        stream.writeEndElement();
+    }
 
     // Serialize curves
-    serializeCurves(m_curves, stream);
+    serializeCurves(stream);
+
+    // End scene
+    stream.writeEndElement();
 }
+
+void SceneModel::serializeCurves(QXmlStreamWriter& stream)
+{
+    stream.writeStartElement("curves");
+
+    for (auto &curve : m_curves)
+        if (!serializeCurve(curve, stream))
+        {
+            qWarning() << "Scene curve serialization failed";
+            return;
+        }
+
+
+    stream.writeEndElement();
+    stream.writeEndDocument();
+}
+
 
 void SceneModel::setFileName(const QString& fileName)
 {
