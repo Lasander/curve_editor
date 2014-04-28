@@ -245,12 +245,26 @@ void CurveModel::removePoint(PointId id)
     emit pointRemoved(id);
 }
 
-
 void CurveModel::setTimeRange(RangeF newRange)
 {
     if (m_timeRange != newRange)
     {
         m_timeRange = newRange;
+
+        // Ensure all points fit to the new time range
+        for (auto pid : pointIds())
+        {
+            Iterator it = findPoint(pid);
+            if (it->time() < m_timeRange.min || it->time() > m_timeRange.max)
+            {
+                for (int d = 0; d < m_dimension; ++d)
+                {
+                    updatePoint(pid, it->time(), it->value(d), d); // updatePoint will do necessary clamping
+                    it = findPoint(pid); // re-validate iterator
+                }
+            }
+        }
+
         emit timeRangeChanged(m_timeRange);
     }
 }
@@ -260,6 +274,21 @@ void CurveModel::setValueRange(RangeF newRange)
     if (m_valueRange != newRange)
     {
         m_valueRange = newRange;
+
+        // Ensure all points fit to the new value range
+        for (auto pid : pointIds())
+        {
+            Iterator it = findPoint(pid);
+            for (int d = 0; d < m_dimension; ++d)
+            {
+                if (it->value(d) < m_valueRange.min || it->value(d) > m_valueRange.max)
+                {
+                    updatePoint(pid, it->time(), it->value(d), d); // updatePoint will do necessary clamping
+                    it = findPoint(pid); // re-validate iterator
+                }
+            }
+        }
+
         emit valueRangeChanged(m_valueRange);
     }
 }

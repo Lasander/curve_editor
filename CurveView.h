@@ -43,6 +43,8 @@ public slots:
     
     void duplicateSelectedPoints();
     void removeSelectedPoints();
+
+    void valueRangeChanged(RangeF valueRange);
     
     void selectedChanged(bool status);
 
@@ -64,6 +66,8 @@ private:
     
     QList<Spline*> m_splines;
 	QMap<Spline*, QGraphicsPathItem*> m_curveViews;
+
+    void updateTransformation();
 };
 
 

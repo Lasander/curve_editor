@@ -32,13 +32,6 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
     }
     
     // Set transformation
-    RangeF valueRange = m_model->valueRange();
-    float maxi = valueRange.max;
-    float mini = valueRange.min;
-    QTransform transform;
-    transform.scale(1, 1 / (maxi - mini));
-    transform.translate(0, -mini);
-    setTransform(transform);
     
     connect(m_model.get(), &CurveModel::pointAdded, this, &CurveView::pointAdded);
     connect(m_model.get(), &CurveModel::pointUpdated, this, &CurveView::pointUpdated);
@@ -46,6 +39,10 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
     
     for (auto pid : m_model->pointIds())
     	pointAdded(pid);
+
+
+    connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::valueRangeChanged);
+    updateTransformation();
 }
 
 CurveView::~CurveView()
@@ -167,6 +164,11 @@ void CurveView::removeSelectedPoints()
         m_model->removePoint(pid);
 }
 
+void CurveView::valueRangeChanged(RangeF valueRange)
+{
+    updateTransformation();
+}
+
 void CurveView::selectedChanged(bool /*status*/)
 {
     // TODO
@@ -270,4 +272,16 @@ bool CurveView::removeFromSpline(CurveModel::Point const& point)
 CurveView::SplineDataSet::const_iterator CurveView::findSplinePoint(CurveModel::Point const& point, int index)
 {
     return m_splines[index]->data().get_point(point.id());
+}
+
+void CurveView::updateTransformation()
+{
+    // Set transformation
+    RangeF valueRange = m_model->valueRange();
+    float maxi = valueRange.max;
+    float mini = valueRange.min;
+    QTransform transform;
+    transform.scale(1, 1 / (maxi - mini));
+    transform.translate(0, -mini);
+    setTransform(transform);
 }
