@@ -19,7 +19,7 @@ public:
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const
     {
-        return 4;
+        return m_curves.size();
     }
 
     int columnCount(const QModelIndex & parent = QModelIndex()) const
@@ -27,23 +27,123 @@ public:
         return 2;
     }
 
+    Qt::ItemFlags flags(const QModelIndex & index) const
+    {
+//        NoItemFlags = 0,
+//        ItemIsSelectable = 1,
+//        ItemIsEditable = 2,
+//        ItemIsDragEnabled = 4,
+//        ItemIsDropEnabled = 8,
+//        ItemIsUserCheckable = 16,
+//        ItemIsEnabled = 32,
+//        ItemIsTristate = 64,
+//        ItemNeverHasChildren = 128
+
+        return Qt::ItemIsEditable | Qt::ItemIsEnabled;
+    }
+
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const
     {
         if (role == Qt::DisplayRole)
+        {
+            std::shared_ptr<CurveModel> curve = m_curves[index.row()];
+
+            switch (index.column())
+            {
+            case 0: return curve->valueRange().min; //QString::number(curve->valueRange().min, 'f', 1);
+            case 1: return curve->valueRange().max; //QString::number(curve->valueRange().max, 'f', 1);
+            default: break;
+            }
             return "Data";
+        }
 
         return QVariant();
+    }
+
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const
+    {
+        if (role == Qt::DisplayRole)
+        {
+            if (orientation == Qt::Vertical)
+            {
+                return m_curves[section]->name();
+            }
+            else
+            {
+                switch (section)
+                {
+                case 0: return "Min";
+                case 1: return "Max";
+                default : break;
+                }
+            }
+            return "Header";
+        }
+
+        return QVariant();
+    }
+
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole)
+    {
+        if (role == Qt::EditRole)
+        {
+            std::shared_ptr<CurveModel> curve = m_curves[index.row()];
+            switch (index.column())
+            {
+            case 0:
+            {
+                bool ok = false;
+                double start = value.toDouble(&ok);
+                if (ok && start < curve->valueRange().max)
+                {
+                    curve->setValueRange(RangeF(start, curve->valueRange().max));
+                }
+                break;
+            }
+            case 1:
+            {
+                bool ok = false;
+                double end = value.toDouble(&ok);
+                if (ok && end > curve->valueRange().min)
+                {
+                    curve->setValueRange(RangeF(curve->valueRange().min, end));
+                }
+                break;
+            }
+            default: break;
+            }
+        }
+
     }
 
 public slots:
     void addCurve(std::shared_ptr<CurveModel> curve)
     {
+        if (m_curves.contains(curve))
+            return;
 
+        beginInsertRows(QModelIndex(), m_curves.size(), m_curves.size());
+        m_curves.push_back(curve);
+        endInsertRows();
     }
 
     void removeCurve(std::shared_ptr<CurveModel> curve)
     {
+        if (!m_curves.contains(curve))
+            return;
 
+        int index = m_curves.indexOf(curve);
+        if (index == -1)
+            return
+
+        beginRemoveRows(QModelIndex(), index, index);
+        m_curves.removeAt(index);
+        endRemoveRows();
+    }
+
+    void clearCurves()
+    {
+        m_curves.clear();
     }
 
     void selectCurve(std::shared_ptr<CurveModel> curve)
@@ -57,9 +157,8 @@ public slots:
     }
 
 private:
-
+    QList<std::shared_ptr<CurveModel>> m_curves;
 };
-
 
 ScenePropertiesWidget::ScenePropertiesWidget(QWidget * parent)
 :	QWidget(parent),
@@ -85,7 +184,7 @@ ScenePropertiesWidget::ScenePropertiesWidget(QWidget * parent)
     vboxLayout->addWidget(m_bpmSpinner);
 
 
-    m_curveTableModel = new CurveTableModel();
+    m_curveTableModel = new CurveTableModel;
     m_curveTable = new QTableView(this);
     m_curveTable->setModel(m_curveTableModel);
     vboxLayout->addWidget(m_curveTable);
@@ -106,15 +205,12 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
 
     if (m_sceneModel)
     {
-//            const int numberOfCurves = m_gridLayout->count();
-//            for (int i = 0; i < numberOfCurves; ++i)
-//            {
-//                m_gridLayout->removeItem(m_gridLayout->itemAt(i));
-//            }
-
         disconnect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
         disconnect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
-//            disconnect(m_sceneModel.get(), &SceneModel::curveAdded, this, &ScenePropertiesWidget::addCurve);
+
+        disconnect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
+        disconnect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
+        m_curveTableModel->clearCurves();
 
         m_beatOffsetSpinner->setEnabled(false);
         m_bpmSpinner->setEnabled(false);
@@ -133,23 +229,10 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
         m_bpmSpinner->setValue(m_sceneModel->bpm());
         m_bpmSpinner->setEnabled(true);
 
-//            connect(m_sceneModel.get(), &SceneModel::curveAdded, this, &ScenePropertiesWidget::addCurve);
-//            for (auto curve : m_sceneModel->curves())
-//                addCurve(curve);
+        connect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
+        connect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
+        for (auto curve : m_sceneModel->curves())
+            m_curveTableModel->addCurve(curve);
     }
 
-}
-
-void ScenePropertiesWidget::addCurve(std::shared_ptr<CurveModel> /*curve*/)
-{
-
-
-    // TODO:
-//        QLabel* nameLabel = new QLabel(curve->name());
-//        m_gridLayout->addWidget(nameLabel, m_gridLayout->rowCount(), 0);
-}
-
-void ScenePropertiesWidget::removeCurve(std::shared_ptr<CurveModel> /*curve*/)
-{
-    // TODO:
 }

@@ -24,10 +24,6 @@ public:
 public slots:
     void setSceneModel(std::shared_ptr<SceneModel> sceneModel);
 
-private slots:
-    void addCurve(std::shared_ptr<CurveModel> curve);
-    void removeCurve(std::shared_ptr<CurveModel> curve);
-
 private:
     QGridLayout* m_gridLayout;
     std::shared_ptr<SceneModel> m_sceneModel;
