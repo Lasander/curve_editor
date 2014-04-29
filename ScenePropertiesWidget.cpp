@@ -7,27 +7,29 @@
 #include <QDoubleSpinBox>
 #include <QTableView>
 #include <QAbstractTableModel>
+#include <QHeaderView>
 
 class CurveTableModel : public QAbstractTableModel
 {
 public:
     CurveTableModel()
+      : m_selectionModel(new QItemSelectionModel(this))
     {}
 
     ~CurveTableModel()
     {}
 
-    int rowCount(const QModelIndex & parent = QModelIndex()) const
+    int rowCount(const QModelIndex& parent = QModelIndex()) const
     {
         return m_curves.size();
     }
 
-    int columnCount(const QModelIndex & parent = QModelIndex()) const
+    int columnCount(const QModelIndex& parent = QModelIndex()) const
     {
-        return 2;
+        return 3;
     }
 
-    Qt::ItemFlags flags(const QModelIndex & index) const
+    Qt::ItemFlags flags(const QModelIndex& index) const
     {
 //        NoItemFlags = 0,
 //        ItemIsSelectable = 1,
@@ -39,10 +41,19 @@ public:
 //        ItemIsTristate = 64,
 //        ItemNeverHasChildren = 128
 
-        return Qt::ItemIsEditable | Qt::ItemIsEnabled;
+        Qt::ItemFlags itemFlags = Qt::NoItemFlags;
+        itemFlags |= Qt::ItemIsEnabled;
+
+        if (index.column() != 0)
+            itemFlags |= Qt::ItemIsEditable;
+
+        if (index.column() == 0)
+            itemFlags |= Qt::ItemIsSelectable;
+
+        return itemFlags;
     }
 
-    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const
     {
         if (role == Qt::DisplayRole)
         {
@@ -50,8 +61,9 @@ public:
 
             switch (index.column())
             {
-            case 0: return curve->valueRange().min; //QString::number(curve->valueRange().min, 'f', 1);
-            case 1: return curve->valueRange().max; //QString::number(curve->valueRange().max, 'f', 1);
+            case 0: return curve->name();
+            case 1: return curve->valueRange().min; //QString::number(curve->valueRange().min, 'f', 1);
+            case 2: return curve->valueRange().max; //QString::number(curve->valueRange().max, 'f', 1);
             default: break;
             }
             return "Data";
@@ -64,20 +76,17 @@ public:
     {
         if (role == Qt::DisplayRole)
         {
-            if (orientation == Qt::Vertical)
-            {
-                return m_curves[section]->name();
-            }
-            else
+            // Only column headers
+            if (orientation == Qt::Horizontal)
             {
                 switch (section)
                 {
-                case 0: return "Min";
-                case 1: return "Max";
+                case 0: return "Curve";
+                case 1: return "Min";
+                case 2: return "Max";
                 default : break;
                 }
             }
-            return "Header";
         }
 
         return QVariant();
@@ -90,30 +99,39 @@ public:
             std::shared_ptr<CurveModel> curve = m_curves[index.row()];
             switch (index.column())
             {
-            case 0:
+            case 1:
             {
                 bool ok = false;
                 double start = value.toDouble(&ok);
                 if (ok && start < curve->valueRange().max)
                 {
                     curve->setValueRange(RangeF(start, curve->valueRange().max));
+                    return true;
                 }
                 break;
             }
-            case 1:
+            case 2:
             {
                 bool ok = false;
                 double end = value.toDouble(&ok);
                 if (ok && end > curve->valueRange().min)
                 {
                     curve->setValueRange(RangeF(curve->valueRange().min, end));
+                    return true;
                 }
                 break;
             }
-            default: break;
+            default:
+                break;
             }
         }
 
+        return false;
+    }
+
+    QItemSelectionModel* getSelectionModel() const
+    {
+        return m_selectionModel;
     }
 
 public slots:
@@ -148,16 +166,66 @@ public slots:
 
     void selectCurve(std::shared_ptr<CurveModel> curve)
     {
+        int index = m_curves.indexOf(curve);
+        if (index == -1)
+        {
+            qWarning() << "Unknown curve selected";
+            return;
+        }
 
+        QModelIndex rowIndex = QAbstractItemModel::createIndex(index, 0);
+        if (!m_selectionModel->isSelected(rowIndex))
+        {
+            m_selectionModel->select(QAbstractItemModel::createIndex(index, 0), QItemSelectionModel::Select);
+        }
     }
 
     void deselectCurve(std::shared_ptr<CurveModel> curve)
     {
+        int index = m_curves.indexOf(curve);
+        if (index == -1)
+        {
+            qWarning() << "Unknown curve selected";
+            return;
+        }
 
+        QModelIndex rowIndex = QAbstractItemModel::createIndex(index, 0);
+        if (!m_selectionModel->isSelected(rowIndex))
+        {
+            m_selectionModel->select(QAbstractItemModel::createIndex(index, 0), QItemSelectionModel::Deselect);
+        }
+    }
+
+    void tableRowsSelected(const QItemSelection& selected, const QItemSelection& deselected)
+    {
+        qDebug() << "tableRowsSelected";
+
+        for (auto index : selected.indexes())
+        {
+            if (index.column() == 0)
+            {
+                qDebug() << "Curve row selected:" << index.row();
+
+                Q_ASSERT(index.row() < m_curves.size());
+                m_curves[index.row()]->setSelected(true);
+            }
+        }
+        for (auto index : deselected.indexes())
+        {
+            if (index.column() == 0)
+            {
+                qDebug() << "Curve row deselected:" << index.row();
+
+                Q_ASSERT(index.row() < m_curves.size());
+                m_curves[index.row()]->setSelected(false);
+            }
+        }
     }
 
 private:
     QList<std::shared_ptr<CurveModel>> m_curves;
+
+    QItemSelectionModel* m_selectionModel;
 };
 
 ScenePropertiesWidget::ScenePropertiesWidget(QWidget * parent)
@@ -183,11 +251,17 @@ ScenePropertiesWidget::ScenePropertiesWidget(QWidget * parent)
     m_bpmSpinner->setEnabled(false);
     vboxLayout->addWidget(m_bpmSpinner);
 
-
     m_curveTableModel = new CurveTableModel;
     m_curveTable = new QTableView(this);
     m_curveTable->setModel(m_curveTableModel);
+    m_curveTable->setSelectionModel(m_curveTableModel->getSelectionModel());
+    // Make columns stretch to available space
+    m_curveTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     vboxLayout->addWidget(m_curveTable);
+
+    // Listen to table selection changes
+    connect(m_curveTable->selectionModel(), &QItemSelectionModel::selectionChanged,
+            m_curveTableModel, &CurveTableModel::tableRowsSelected);
 
     this->setLayout(vboxLayout);
 }
@@ -205,34 +279,50 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
 
     if (m_sceneModel)
     {
+        // Disconnect from old scene
         disconnect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
         disconnect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
-
         disconnect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
         disconnect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
+        disconnect(m_sceneModel.get(), &SceneModel::curveSelected, m_curveTableModel, &CurveTableModel::selectCurve);
+        disconnect(m_sceneModel.get(), &SceneModel::curveDeselected, m_curveTableModel, &CurveTableModel::deselectCurve);
+
+        // Clear curve table
         m_curveTableModel->clearCurves();
 
+        // Disable beat offset and bpm spinners
         m_beatOffsetSpinner->setEnabled(false);
         m_bpmSpinner->setEnabled(false);
     }
 
+    // Change the model
     m_sceneModel = sceneModel;
 
     if (m_sceneModel)
     {
+        // Connect to new scene
         connect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
         connect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
+        connect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
+        connect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
+        connect(m_sceneModel.get(), &SceneModel::curveSelected, m_curveTableModel, &CurveTableModel::selectCurve);
+        connect(m_sceneModel.get(), &SceneModel::curveDeselected, m_curveTableModel, &CurveTableModel::deselectCurve);
 
+        // Enable and initialize beat offset spinner
         m_beatOffsetSpinner->setValue(m_sceneModel->beatOffset());
         m_beatOffsetSpinner->setEnabled(true);
 
+        // Enable and initialize bpm spinner
         m_bpmSpinner->setValue(m_sceneModel->bpm());
         m_bpmSpinner->setEnabled(true);
 
-        connect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
-        connect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
+        // Add existing curves to the curve table
         for (auto curve : m_sceneModel->curves())
+        {
             m_curveTableModel->addCurve(curve);
+            if (curve->isSelected())
+                m_curveTableModel->selectCurve(curve);
+        }
     }
 
 }

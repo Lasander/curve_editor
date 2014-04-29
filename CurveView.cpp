@@ -164,7 +164,7 @@ void CurveView::removeSelectedPoints()
         m_model->removePoint(pid);
 }
 
-void CurveView::valueRangeChanged(RangeF valueRange)
+void CurveView::valueRangeChanged(RangeF /*valueRange*/)
 {
     updateTransformation();
 }
