@@ -21,11 +21,13 @@ public:
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const
     {
+        Q_UNUSED(parent);
         return m_curves.size();
     }
 
     int columnCount(const QModelIndex& parent = QModelIndex()) const
     {
+        Q_UNUSED(parent);
         return 3;
     }
 
@@ -152,7 +154,7 @@ public slots:
 
         int index = m_curves.indexOf(curve);
         if (index == -1)
-            return
+            return;
 
         beginRemoveRows(QModelIndex(), index, index);
         m_curves.removeAt(index);

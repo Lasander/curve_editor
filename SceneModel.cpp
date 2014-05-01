@@ -261,8 +261,9 @@ void SceneModel::addCurve(std::shared_ptr<CurveModel> curve)
     curve->setTimeRange(m_timeRange);
     connect(this, &SceneModel::timeRangeChanged, curve.get(), &CurveModel::setTimeRange);
 
-    // Listen to curve selection changes
+    // Listen to curve changes
     connect(curve.get(), &CurveModel::selectedChanged, this, &SceneModel::curveSelectionChanged);
+    connect(curve.get(), &CurveModel::pointRemoved, this, &SceneModel::curvePointRemoved);
 
     m_curves.push_back(curve);
     emit curveAdded(curve);
@@ -290,16 +291,12 @@ void SceneModel::removeCurve(std::shared_ptr<CurveModel> curve)
 
     // Deselect curve on removal
     curve->setSelected(false);
-    // No longer listen to curve selection changes
+    // No longer listen to curve changes
     disconnect(curve.get(), &CurveModel::selectedChanged, this, &SceneModel::curveSelectionChanged);
+    disconnect(curve.get(), &CurveModel::pointRemoved, this, &SceneModel::curvePointRemoved);
 
     // Remove all instance, just in case
-    int removed = m_curves.removeAll(curve);
-    if (removed < 1)
-    {
-        qWarning() << "Trying to remove non-existent curve" << curve->name();
-        return;
-    }
+    m_curves.removeAll(curve);
 
     emit curveRemoved(curve);
 
@@ -381,6 +378,26 @@ void SceneModel::curveSelectionChanged(bool status)
         }
 
     qWarning() << "Manual selection change notification from unknown curve" << status;
+}
+
+void SceneModel::curvePointRemoved(PointId point)
+{
+    Q_UNUSED(point);
+
+    const CurveModel* sendingCurve = static_cast<CurveModel*>(sender());
+
+    // Find the curve that sent the notification and emit (de)selection
+    for (auto curve : m_curves)
+        if (curve.get() == sendingCurve)
+        {
+            // Remove whole curve if last point was removed
+            if (curve->numberOfPoints() == 0)
+                removeCurve(curve);
+
+            return;
+        }
+
+    qWarning() << "Point removed notification from unknown curve";
 }
 
 void SceneModel::serialize(QXmlStreamWriter& stream)

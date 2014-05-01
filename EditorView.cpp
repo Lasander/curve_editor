@@ -121,13 +121,16 @@ void EditorView::timeRangeChanged(RangeF /*timeRange*/)
 
 void EditorView::duplicateSelectedPoints()
 {
-    for (auto &curveView : m_curveViews)
+    for (auto curveView : m_curveViews)
         curveView->duplicateSelectedPoints();
 }
 
 void EditorView::removeSelectedPoints()
 {
-    for (auto &curveView : m_curveViews)
+    // Need to iterate a copy as the original container might change as a result of removing points
+    Container copyOfCurveView = m_curveViews;
+
+    for (auto curveView : copyOfCurveView)
         curveView->removeSelectedPoints();
 }
 

@@ -9,6 +9,7 @@
 #ifndef __CurveEditor__SceneModel__
 #define __CurveEditor__SceneModel__
 
+#include "PointId.h"
 #include "RangeF.h"
 #include <QObject>
 #include <QList>
@@ -152,6 +153,16 @@ private slots:
      * @param status Current selection status
      */
     void curveSelectionChanged(bool status);
+
+    /**
+     * @brief Notification of curve point being removed. Used to remove empty curves from the scene
+     *
+     * Expected only from curves currently in the scene. Note: The curve sending this signal
+     * is retrieved using QObject::sender().
+     *
+     * @param point Remove point id (not used)
+     */
+    void curvePointRemoved(PointId point);
 
 private:
     using Container = QList<std::shared_ptr<CurveModel>>;
