@@ -152,6 +152,9 @@ SceneModel::SceneModel(RangeF timeRange)
     connect(this, &SceneModel::timeRangeChanged, m_SelectedCurvesEditor.get(), &EditorModel::setTimeRange);
     connect(this, &SceneModel::beatOffsetChanged, m_SelectedCurvesEditor.get(), &EditorModel::setBeatOffset);
     connect(this, &SceneModel::bpmChanged, m_SelectedCurvesEditor.get(), &EditorModel::setBpm);
+
+    connect(m_AllCurvesEditor.get(), &EditorModel::requestToAddNewCurve, this, &SceneModel::addCurve);
+    connect(m_SelectedCurvesEditor.get(), &EditorModel::requestToAddNewCurve, this, &SceneModel::addCurve);
 }
 
 std::shared_ptr<SceneModel> SceneModel::create(QXmlStreamReader& stream)

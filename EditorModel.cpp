@@ -110,3 +110,8 @@ void EditorModel::setBpm(double bpm)
     }
 }
 
+void EditorModel::handleRequestToAddNewCurve(std::shared_ptr<CurveModel> curve)
+{
+    emit requestToAddNewCurve(curve);
+}
+

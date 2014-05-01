@@ -48,6 +48,12 @@ signals:
     /** @brief View time scaling changed. */
     void timeScaleChanged(float timeScale);
 
+    /**
+     * @brief New curve was added through the editor view.
+     * @param curve The curve
+     */
+    void newCurveAdded(std::shared_ptr<CurveModel> curve);
+
 public slots:
     /**
      * @brief Create new point for each selected point in respective curves.
@@ -71,7 +77,14 @@ private slots: /** Signals from EditorModel */
      */
     void curveRemoved(std::shared_ptr<CurveModel> curve);
 
+    /**
+     * @brief Editor model time range changed.
+     * @param timeRange New time range
+     */
     void timeRangeChanged(RangeF timeRange);
+
+    /** @brief New curve was selected to be added from a context menu. */
+    void addNewCurve();
 
 private:
     void contextMenuEvent(QContextMenuEvent *event);

@@ -74,6 +74,12 @@ signals:
      */
     void bpmChanged(double bpm);
 
+    /**
+     * @brief Request to add a new curve.
+     * @param curve Curve to be added.
+     */
+    void requestToAddNewCurve(std::shared_ptr<CurveModel> curve);
+
 public slots:
     /**
      * @brief Associate a curve with this editor.
@@ -106,6 +112,12 @@ public slots:
      * @param timeRange New bpm.
      */
     void setBpm(double bpm);
+
+    /**
+     * @brief Request new curve to be added. Relay the request through signal requestToAddNewCurve().
+     * @param curve Curve to be added.
+     */
+    void handleRequestToAddNewCurve(std::shared_ptr<CurveModel> curve);
 
 private:
     using Container = QList<std::shared_ptr<CurveModel>>;

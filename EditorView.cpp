@@ -75,6 +75,7 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
     connect(this, &EditorView::timeScaleChanged, beatView, &BeatLinesView::setTimeScale);
     connect(m_model.get(), &EditorModel::beatOffsetChanged, beatView, &BeatLinesView::setBeatOffset);
     connect(m_model.get(), &EditorModel::bpmChanged, beatView, &BeatLinesView::setBpm);
+    connect(this, &EditorView::newCurveAdded, m_model.get(), &EditorModel::handleRequestToAddNewCurve);
 
     // Set view transformation
     QTransform transform;
@@ -134,6 +135,28 @@ void EditorView::removeSelectedPoints()
         curveView->removeSelectedPoints();
 }
 
+void EditorView::addNewCurve()
+{
+    RangeF timeRange = m_model->timeRange();
+    if (!timeRange.isValid())
+    {
+        qWarning() << "Cannot add new curve without valid timerange";
+        return;
+    }
+
+    float timeRangeSize = timeRange.max - timeRange.min;
+
+    // New curve with value range [0, 1]
+    std::shared_ptr<CurveModel> newCurve = std::make_shared<CurveModel>(1, "New curve");
+    newCurve->setValueRange(RangeF(0, 1));
+
+    // Add points to 1/6 and 5/6 time
+    newCurve->addPoint(timeRange.min + timeRangeSize/6.0, {0.5});
+    newCurve->addPoint(timeRange.min + timeRangeSize * 5.0/6.0, {0.5});
+
+    emit newCurveAdded(newCurve);
+}
+
 void EditorView::contextMenuEvent(QContextMenuEvent* event)
 {
     if (!scene())
@@ -143,10 +166,20 @@ void EditorView::contextMenuEvent(QContextMenuEvent* event)
     
 	if (selectedItems.size() > 0)
     {
-        QMenu menu;
-    	menu.addAction(selectedItems.size() > 1 ? "Add points" : "Add point", this, SLOT(duplicateSelectedPoints()));
-	    menu.addAction(selectedItems.size() > 1 ? "Remove points" : "Remove point", this, SLOT(removeSelectedPoints()));
-        menu.exec(event->globalPos());
+        const bool multipleSelected = selectedItems.size() > 1;
+
+        QMenu pointsMenu;
+        pointsMenu.setTitle("Points");
+        pointsMenu.addAction(multipleSelected ? "Add points" : "Add point", this, SLOT(duplicateSelectedPoints()));
+        pointsMenu.addAction(multipleSelected ? "Remove points" : "Remove point", this, SLOT(removeSelectedPoints()));
+        pointsMenu.exec(event->globalPos());
+    }
+    else
+    {
+        QMenu curveMenu;
+        curveMenu.setTitle("Curves");
+        curveMenu.addAction("Add new curve", this, SLOT(addNewCurve()));
+        curveMenu.exec(event->globalPos());
     }
 }
 
