@@ -2,6 +2,7 @@
 #define PT_MATH_KB_DATA_SET_H
 
 #include <cassert>
+#include "../../PointId.h"
 
 namespace pt { namespace math {
 
@@ -25,9 +26,9 @@ public: // type definitions
     class point
     {
     public:
-        point(int32_t id, float time, T value, kochanek_bartels_parameters const& parameters);
+        point(PointId id, float time, T value, kochanek_bartels_parameters const& parameters);
         
-        int32_t id() const
+        PointId id() const
         {
             return m_id;
         }
@@ -60,7 +61,7 @@ public: // type definitions
             return m_parameters;
         }
     private: // data members
-        int32_t m_id;
+        PointId m_id;
         float m_time;
         T m_value;
         kochanek_bartels_parameters m_parameters;
@@ -86,7 +87,7 @@ public:
     const_iterator optional_endpoint(float time) const;
     point_pair points_at(float time) const;
 
-    const_iterator get_point(int32_t id) const;
+    const_iterator get_point(PointId id) const;
 
     iterator add(point const& p);
     iterator erase(const_iterator pos);
@@ -138,7 +139,7 @@ typename DataSet::point_pair get_interval(float time, DataSet const& data);
 // .inl
     
 template<typename T>
-inline kb_data_set<T>::point::point(int32_t id, float time, T value,
+inline kb_data_set<T>::point::point(PointId id, float time, T value,
                                     kochanek_bartels_parameters const& parameters)
 :   m_id(id)
 ,   m_time(time)
@@ -293,7 +294,7 @@ inline typename kb_data_set<T>::point_pair kb_data_set<T>::points_at(
 
 template<typename T>
 inline typename kb_data_set<T>::const_iterator
-    kb_data_set<T>::get_point(int32_t id) const
+    kb_data_set<T>::get_point(PointId id) const
 {
     auto it = m_points.begin();
     for (; it != m_points.end(); ++it)

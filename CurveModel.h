@@ -9,13 +9,11 @@
 #ifndef __CurveEditor__CurveModel__
 #define __CurveEditor__CurveModel__
 
+#include "PointId.h"
 #include "RangeF.h"
 #include <QObject>
 #include <QMultiMap>
 #include <QDebug>
-
-/** Unique identification for a point within a CurveModel */
-using PointId = int32_t;
 
 /**
  * @brief Check point if validity

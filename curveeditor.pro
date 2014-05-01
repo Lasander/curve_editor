@@ -54,4 +54,5 @@ HEADERS  += \
     pt/math/kb_spline.h \
     SceneModel.h \
     BeatLinesView.h \
-    ScenePropertiesWidget.h
+    ScenePropertiesWidget.h \
+    PointId.h
