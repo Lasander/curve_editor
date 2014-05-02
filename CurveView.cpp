@@ -269,7 +269,7 @@ bool CurveView::removeFromSpline(CurveModel::Point const& point)
     return true;
 }
 
-CurveView::SplineDataSet::const_iterator CurveView::findSplinePoint(CurveModel::Point const& point, int index)
+CurveView::SplineDataSet::iterator CurveView::findSplinePoint(CurveModel::Point const& point, int index)
 {
     return m_splines[index]->data().get_point(point.id());
 }

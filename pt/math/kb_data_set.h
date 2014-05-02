@@ -87,10 +87,10 @@ public:
     const_iterator optional_endpoint(float time) const;
     point_pair points_at(float time) const;
 
-    const_iterator get_point(PointId id) const;
+    iterator get_point(PointId id);
 
     iterator add(point const& p);
-    iterator erase(const_iterator pos);
+    iterator erase(iterator pos);
     
     const_iterator begin() const
     {
@@ -293,8 +293,8 @@ inline typename kb_data_set<T>::point_pair kb_data_set<T>::points_at(
 }
 
 template<typename T>
-inline typename kb_data_set<T>::const_iterator
-    kb_data_set<T>::get_point(PointId id) const
+inline typename kb_data_set<T>::iterator
+    kb_data_set<T>::get_point(PointId id)
 {
     auto it = m_points.begin();
     for (; it != m_points.end(); ++it)
@@ -355,7 +355,7 @@ typename kb_data_set<T>::iterator kb_data_set<T>::add_point(point const& point)
 
     
 template<typename T>
-typename kb_data_set<T>::iterator kb_data_set<T>::erase(kb_data_set<T>::const_iterator pos)
+typename kb_data_set<T>::iterator kb_data_set<T>::erase(kb_data_set<T>::iterator pos)
 {
     if (pos == m_points.end())
         return m_points.end();

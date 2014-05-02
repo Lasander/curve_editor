@@ -62,7 +62,7 @@ private:
     
     bool addToSpline(CurveModel::Point const& point);
     bool removeFromSpline(CurveModel::Point const& point);
-    SplineDataSet::const_iterator findSplinePoint(CurveModel::Point const& point, int index);
+    SplineDataSet::iterator findSplinePoint(CurveModel::Point const& point, int index);
     
     QList<Spline*> m_splines;
 	QMap<Spline*, QGraphicsPathItem*> m_curveViews;
