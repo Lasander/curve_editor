@@ -12,6 +12,7 @@
 #include "RangeF.h"
 #include <QObject>
 #include <QList>
+#include <memory>
 
 class CurveModel;
 

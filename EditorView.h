@@ -13,6 +13,7 @@
 #include <QObject>
 #include <QGraphicsView>
 #include <QMap>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;

@@ -4,6 +4,7 @@
 #include <QObject>
 #include "TransformationNode.h"
 #include "RangeF.h"
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 class QGraphicsItem;

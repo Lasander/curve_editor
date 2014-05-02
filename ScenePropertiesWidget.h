@@ -2,6 +2,7 @@
 #define SCENEPROPERTIESWIDGET_H
 
 #include <QWidget>
+#include <memory>
 
 class CurveModel;
 class SceneModel;

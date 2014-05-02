@@ -13,6 +13,7 @@
 #include "CurveModel.h"
 #include <QObject>
 #include "pt/math/kb_spline.h"
+#include <memory>
 
 class PointView;
 
