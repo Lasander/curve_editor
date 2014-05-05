@@ -94,6 +94,7 @@ private:
     
     void setTimeScale(qreal timeScale);
     void updateTransformation();
+    QRectF calculateSceneItemsBoundingRect() const;
     
     QGraphicsScene* m_scene;
     QGraphicsItem* m_sceneLayer;

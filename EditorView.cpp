@@ -62,6 +62,8 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
     
     m_scene = new EditorGraphicsScene(this);
     setScene(m_scene);
+    // Align scene to the left edge
+    setAlignment(Qt::AlignLeft);
     
 	m_sceneLayer = new TransformationNode(NULL);
     m_scene->addItem(m_sceneLayer);
@@ -209,30 +211,29 @@ void EditorView::wheelEvent(QWheelEvent* event)
 
 void EditorView::updateTransformation()
 {
-    const int horizontalScrollBarHeight = 15;
-    
-    QSizeF newSize(contentsRect().size().width(), contentsRect().size().height());
+    const bool scrollBarVisible = horizontalScrollBar()->isVisible();
+    const int scrollBarHeight = scrollBarVisible ? horizontalScrollBar()->height() : 0;
+    // contentsRect() gets the size, but doesn't take into account scrollbars taking up space, adjust accordingly
+    const QSizeF newSize(contentsRect().size().width(), contentsRect().size().height() - scrollBarHeight);
 
-//    qDebug() << "updateTransformation:";
+    // Update scene transformation according to new size and timescale => affecs scene bounding rect
+    m_sceneLayer->setTransform(QTransform::fromScale(m_timeScale, newSize.height()));
+    QRectF newSceneRect = calculateSceneItemsBoundingRect();
 
-    bool sceneFitsInViewBefore = m_scene->sceneRect().width() <= newSize.width();
-    
-    //  Update scene transformation according to new size and timescale => affecs scene rect
-    {
-        qreal xScale = m_timeScale;
-        qreal yScale = newSize.height();
-        if (!sceneFitsInViewBefore)
-            yScale -= horizontalScrollBarHeight;
-        
-        m_sceneLayer->setTransform(QTransform::fromScale(xScale, yScale));
-    }
+    // Adjust scene rect to match the new view vertical size and to be positioned in (0, 0)
+    newSceneRect.setTopLeft(QPoint(0, 0));
+    newSceneRect.setHeight(newSize.height());
+    qDebug() << "  SceneRect:" << sceneRect() << "->" << newSceneRect;
+    m_scene->setSceneRect(newSceneRect);
+}
 
+QRectF EditorView::calculateSceneItemsBoundingRect() const
+{
     // Bounding rects for items that ignore transformations are not calculated correctly (!?),
     // maybe related to https://bugreports.qt-project.org/browse/QTBUG-38344. Calculate scene
-    // items bounding rect by manually iterating
+    // items bounding rect by manually iterating instead of "m_scene->itemsBoundingRect();"
 
-    //QRectF sceneRectAfter = m_scene->itemsBoundingRect();
-    QRectF sceneRectAfter;
+    QRectF itemsBoundingRect;
     for (QGraphicsItem* item : m_scene->items())
     {
         if (!item->isVisible())
@@ -251,28 +252,10 @@ void EditorView::updateTransformation()
             boundingRect = item->sceneBoundingRect();
         }
 
-//        qDebug() << "  Item:" << boundingRect;
-        sceneRectAfter |= boundingRect;
+        itemsBoundingRect |= boundingRect;
     }
 
-    qreal sceneAfterRight = sceneRectAfter.x() + sceneRectAfter.width();
-    QRectF newSceneRect(0, 0, qMax(sceneAfterRight, newSize.width()), newSize.height());
-    qDebug() << "  SceneRect:" << m_scene->sceneRect() << "->" << newSceneRect;
-
-    bool sceneFitsInViewAfter = sceneAfterRight <= newSize.width();
-    
-    //  Update scene transformation again if need for horizontalScrollBar has changed
-    if (sceneFitsInViewBefore != sceneFitsInViewAfter)
-    {
-        qreal xScale = m_timeScale;
-        qreal yScale = newSize.height();
-        if (!sceneFitsInViewAfter)
-            yScale -= horizontalScrollBarHeight;
-
-        m_sceneLayer->setTransform(QTransform::fromScale(xScale, yScale));
-    }
-    
-    m_scene->setSceneRect(newSceneRect);
+    return itemsBoundingRect;
 }
 
 void EditorView::setTimeScale(qreal timeScale)
