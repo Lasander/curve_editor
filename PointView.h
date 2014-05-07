@@ -42,7 +42,8 @@ public:
     
 signals:
     void pointPositionChanged(PointId id, float time, float value, int index);
-    
+    void pointSelectedChanged(PointId id, int index, bool isSelected);
+
 private:
     void handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveStartEvent* event) override;
     void handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveEvent* event) override;

@@ -51,19 +51,19 @@ bool isValid(PointId pointId)
 
 
 CurveModel::Point::Point()
-:	m_is_valid(false), m_id(0), m_time(0), m_values({0}),
+:	m_isValid(false), m_isSelected({false}), m_id(0), m_time(0), m_values({0}),
 	m_tension(0), m_bias(0), m_continuity(0)
 {
 }
 
-CurveModel::Point::Point(float time, QList<float> values, PointId id)
-:	m_is_valid(true), m_id(id == 0 ? generateId() : id), m_time(time), m_values(values),
+CurveModel::Point::Point(float time, QList<float> values, QList<bool> isSelected, PointId id)
+:	m_isValid(true), m_isSelected(isSelected), m_id(id == 0 ? generateId() : id), m_time(time), m_values(values),
 	m_tension(0), m_bias(0), m_continuity(0)
 {
 }
 
-CurveModel::Point::Point(float time, QList<float> values, float tension, float bias, float continuity, PointId id)
-:	m_is_valid(true), m_id(id == 0 ? generateId() : id), m_time(time), m_values(values),
+CurveModel::Point::Point(float time, QList<float> values, float tension, float bias, float continuity, QList<bool> isSelected, PointId id)
+:	m_isValid(true), m_isSelected(isSelected), m_id(id == 0 ? generateId() : id), m_time(time), m_values(values),
 	m_tension(tension), m_bias(bias), m_continuity(continuity)
 {
 }
@@ -73,6 +73,24 @@ void CurveModel::Point::updateParams(float tension, float bias, float continuity
 	m_tension = tension;
 	m_bias = bias;
 	m_continuity = continuity;
+}
+
+bool CurveModel::Point::isAnySelected() const
+{
+    for (auto sel : m_isSelected)
+        if (sel) return true;
+
+    return false;
+}
+
+QList<bool> CurveModel::Point::isSelected() const
+{
+    return m_isSelected;
+}
+
+void CurveModel::Point::setSelected(bool isSelected, int index)
+{
+    m_isSelected[index] = isSelected;
 }
 
 PointId CurveModel::Point::generateId()
@@ -175,7 +193,13 @@ void CurveModel::addPoint(float time, QList<float> values, float tension, float 
     time = limitTimeToRange(time);
     values = limitValuesToScale(values);
     
-    Point p(time, values, tension, bias, continuity);
+    // Form selected array
+    int dimension = values.size();
+    QList<bool> selected;
+    for (int i = 0; i < dimension; ++i)
+        selected.push_back(false);
+
+    Point p(time, values, tension, bias, continuity, selected);
     m_points.insert(time, p);
     
     emit pointAdded(p.id());
@@ -205,7 +229,7 @@ void CurveModel::updatePoint(PointId id, float time, float value, int index)
     QList<float> values(old.values());
     values[index] = value;
     
-    Point p(time, values, old.tension(), old.bias(), old.continuity(), old.id());
+    Point p(time, values, old.tension(), old.bias(), old.continuity(), old.isSelected(), old.id());
     if (p == old)
         return; // No change
     
@@ -217,16 +241,43 @@ void CurveModel::updatePoint(PointId id, float time, float value, int index)
 
 void CurveModel::updatePointParams(PointId id, float tension, float bias, float continuity)
 {
+    qDebug() << "updatePointParams" << id << tension << bias << continuity;
+
     Iterator it = findPoint(id);
     if (it == m_points.end())
         return;
     
-    Point p(it->time(), it->values(), tension, bias, continuity, it->id());
+    Point p(it->time(), it->values(), tension, bias, continuity, it->isSelected(), it->id());
     if (p == *it)
         return; // No change
     
     it->updateParams(tension, bias, continuity);
     emit pointUpdated(id);
+}
+
+void CurveModel::pointSelectedChanged(PointId id, int index, bool isSelected)
+{
+    qDebug() << "Point:" << id << ":" << index <<  (isSelected ? "selected" : "deselected");
+
+    Iterator it = findPoint(id);
+    if (it == m_points.end())
+    {
+        qWarning() << "Unknown point selected changed" << id;
+        return;
+    }
+
+    const bool oldSelected = it->isAnySelected();
+    it->setSelected(isSelected, index);
+    const bool newSelected = it->isAnySelected();
+
+    if (newSelected && !oldSelected)
+    {
+        emit pointSelected(id);
+    }
+    else if (!newSelected && oldSelected)
+    {
+        emit pointDeselected(id);
+    }
 }
 
 void CurveModel::removePoint(PointId id)
@@ -240,6 +291,10 @@ void CurveModel::removePoint(PointId id)
         return;
     }
     
+    // Deselect point before removing
+    if (it->isAnySelected())
+        emit pointDeselected(id);
+
     m_points.erase(it);
     
     emit pointRemoved(id);

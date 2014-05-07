@@ -88,7 +88,9 @@ void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemSelecte
     
     qDebug() << "PointView::GraphicsItemSelectedEvent"  << m_pointModel.id() << event->data();
     
-    m_text->setVisible(event->data());
+    bool isSelected = event->data();
+    m_text->setVisible(isSelected);
+    emit pointSelectedChanged(m_pointModel.id(), m_index, isSelected);
 }
 
 bool PointView::handleItemChange(QGraphicsItem* item, QGraphicsItem::GraphicsItemChange change, const QVariant& value, QVariant& output)

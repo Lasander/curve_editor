@@ -6,6 +6,7 @@
 
 class SceneModel;
 class EditorView;
+class PointPropertiesWidget;
 class ScenePropertiesWidget;
 
 QT_BEGIN_NAMESPACE
@@ -51,6 +52,7 @@ private:
     QLayout* m_editorContainer;
     QList<EditorView*> m_editors;
 
+    PointPropertiesWidget* m_pointProperties;
     ScenePropertiesWidget* m_sceneProperties;
 
     std::shared_ptr<SceneModel> m_sceneModel;

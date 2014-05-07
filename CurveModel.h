@@ -56,12 +56,16 @@ public:
         Point();
 
         /** @brief Construct valid point, optionally with an existing id */
-        Point(float time, QList<float> values, PointId id = 0);
-        Point(float time, QList<float> values, float tension, float bias, float continuity, PointId id = 0);
+        Point(float time, QList<float> values, QList<bool> isSelected, PointId id = 0);
+        Point(float time, QList<float> values, float tension, float bias, float continuity, QList<bool> isSelected, PointId id = 0);
         void updateParams(float tension, float bias, float continuity);
 
         bool operator==(Point const& other) const;
         bool operator!=(Point const& other) const;
+
+        bool isAnySelected() const;
+        QList<bool> isSelected() const;
+        void setSelected(bool isSelected, int index);
         
         /** @return New unique point id's */
         static PointId generateId();
@@ -72,7 +76,8 @@ public:
         friend class CurveModel;
         
     private:
-        bool m_is_valid;
+        bool m_isValid;
+        QList<bool> m_isSelected;
         PointId m_id;
         float m_time;
         QList<float> m_values;
@@ -131,6 +136,10 @@ signals:
     void pointAdded(PointId id);
     /** @brief Data for an existing point was modified. */
     void pointUpdated(PointId id);
+    /** @brief Point was selected. */
+    void pointSelected(PointId id);
+    /** @brief Point was deselected. */
+    void pointDeselected(PointId id);
     /** @brief An existing point was removed. */
     void pointRemoved(PointId id);
 
@@ -189,6 +198,14 @@ public slots:
      * @par No modifications are made if the id is invalid
      */
     void updatePointParams(PointId id, float tension, float bias, float continuity);
+
+    /**
+     * @brief Point selected state changed. Can also be another index of already selected point being selected.
+     * @param id Point id
+     * @param index The dimension index
+     * @param isSelected True if point is selected
+     */
+    void pointSelectedChanged(PointId id, int index, bool isSelected);
 
     /**
      * @brief Remove a point.
@@ -265,7 +282,7 @@ inline float CurveModel::Point::continuity() const
 
 inline bool CurveModel::Point::is_valid() const
 {
-    return m_is_valid;
+    return m_isValid;
 }
 
 inline PointId CurveModel::Point::id() const
@@ -279,7 +296,10 @@ inline bool CurveModel::Point::operator==(Point const& other) const
     (other.is_valid() == is_valid()) &&
     (other.id() == id()) &&
     (other.time() == time()) &&
-    (other.values() == values());
+    (other.values() == values()) &&
+    (other.tension() == tension()) &&
+    (other.bias() == bias()) &&
+    (other.continuity() == continuity());
 }
 
 inline bool CurveModel::Point::operator!=(Point const& other) const

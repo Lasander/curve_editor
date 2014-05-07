@@ -35,7 +35,8 @@ SOURCES += \
     pt/math/cubic_hermite_spline.inl \
     SceneModel.cpp \
     BeatLinesView.cpp \
-    ScenePropertiesWidget.cpp
+    ScenePropertiesWidget.cpp \
+    PointPropertiesWidget.cpp
 
 HEADERS  += \
     CurveModel.h \
@@ -58,4 +59,5 @@ HEADERS  += \
     SceneModel.h \
     BeatLinesView.h \
     ScenePropertiesWidget.h \
-    PointId.h
+    PointId.h \
+    PointPropertiesWidget.h

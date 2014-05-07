@@ -65,6 +65,7 @@ void CurveView::pointAdded(PointId id)
     	PointView* pointView = new PointView(point, i, this);
         m_pointViews.insert(id, pointView);
         connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
+        connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
     }
 
     bool addOk = addToSpline(point);

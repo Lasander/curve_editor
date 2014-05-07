@@ -4,70 +4,18 @@
 #include "CurveModel.h"
 #include "SceneModel.h"
 #include "ScenePropertiesWidget.h"
+#include "PointPropertiesWidget.h"
 
-#include <QHBoxLayout>
-#include <QVBoxLayout>
+#include <QLayout>
 #include <QTime>
 #include <QMenu>
 #include <QMenuBar>
 
 #include <QAction>
-#include <QWidget>
-#include <QSlider>
 #include <QDockWidget>
-#include <QLabel>
-#include <QGridLayout>
 #include <QFileDialog>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
-
-class PointPropertiesWidget : public QWidget
-{
-public:
-    PointPropertiesWidget(QWidget * parent = 0)
-    :	QWidget(parent)
-    {
-        QLabel* tensionLabel = new QLabel("Tension");
-        QSlider* tensionSlider = new QSlider(Qt::Horizontal);
-        tensionSlider->setMinimum(-100);
-        tensionSlider->setMaximum(100);
-        tensionSlider->setSingleStep(5);
-        tensionSlider->setPageStep(20);
-
-        QLabel* biasLabel = new QLabel("Bias");
-        QSlider* biasSlider = new QSlider(Qt::Horizontal);
-        biasSlider->setMinimum(-100);
-        biasSlider->setMaximum(100);
-        biasSlider->setSingleStep(5);
-        biasSlider->setPageStep(20);
-
-        QLabel* continuityLabel = new QLabel("Continuity");
-        QSlider* continuitySlider = new QSlider(Qt::Horizontal);
-        continuitySlider->setMinimum(-100);
-        continuitySlider->setMaximum(100);
-        continuitySlider->setSingleStep(5);
-        continuitySlider->setPageStep(20);
-
-        QGridLayout* gridLayout = new QGridLayout();
-        gridLayout->addWidget(tensionLabel, 0, 0);
-        gridLayout->addWidget(tensionSlider, 0, 1);
-        gridLayout->addWidget(biasLabel, 1, 0);
-        gridLayout->addWidget(biasSlider, 1, 1);
-        gridLayout->addWidget(continuityLabel, 2, 0);
-        gridLayout->addWidget(continuitySlider, 2, 1);
-        
-        this->setLayout(gridLayout);
-	}
-    
-    ~PointPropertiesWidget()
-    {
-    }
-    
-public slots:
-    
-private:
-
-};
 
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent),
@@ -124,7 +72,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Add dock widgets
     QDockWidget* pointDockWidget = new QDockWidget(tr("Point properties"), this);
     pointDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    pointDockWidget->setWidget(new PointPropertiesWidget);
+    m_pointProperties = new PointPropertiesWidget;
+    pointDockWidget->setWidget(m_pointProperties);
     addDockWidget(Qt::LeftDockWidgetArea, pointDockWidget);
 
     QDockWidget* sceneDockWidget = new QDockWidget(tr("Scene sproperties"), this);
@@ -170,6 +119,7 @@ void MainWindow::newScene()
     m_sceneModel->addCurve(c2);
     m_sceneModel->selectCurve(c2);
     m_sceneModel->setBpm(60);
+    m_pointProperties->setSceneModel(m_sceneModel);
     m_sceneProperties->setSceneModel(m_sceneModel);
 
     EditorView* allCurvesEditorView = new EditorView(m_sceneModel->getAllCurvesEditor());
@@ -221,6 +171,7 @@ void MainWindow::openScene()
         return;
     }
     m_sceneModel->setFileName(fileName);
+    m_pointProperties->setSceneModel(m_sceneModel);
     m_sceneProperties->setSceneModel(m_sceneModel);
 
     EditorView* allCurvesEditorView = new EditorView(m_sceneModel->getAllCurvesEditor());
@@ -342,6 +293,7 @@ void MainWindow::closeScene()
 
     // Delete scene
     m_sceneModel.reset();
+    m_pointProperties->setSceneModel(m_sceneModel);
     m_sceneProperties->setSceneModel(m_sceneModel);
 
     updateSceneActionStates();
