@@ -68,7 +68,9 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
 	m_sceneLayer = new TransformationNode(NULL);
     m_scene->addItem(m_sceneLayer);
     
-    ScaleView* scaleView = new ScaleView(5, m_model->timeRange(), m_sceneLayer);
+    const int numberOfScaleLines = 5;
+
+    ScaleView* scaleView = new ScaleView(numberOfScaleLines, m_model->timeRange(), m_sceneLayer);
     connect(m_model.get(), &EditorModel::timeRangeChanged, scaleView, &ScaleView::setTimeRange);
 
     BeatLinesView* beatView = new BeatLinesView(

@@ -31,8 +31,8 @@ class CurveView :
 public:
     /**
      * @brief Construct CurveView
-     * @param parent
-     * @param model
+     * @param model Curve model
+     * @param parent Parent item
      */
     CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent);
     ~CurveView();
