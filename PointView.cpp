@@ -16,11 +16,13 @@
 #include <QDebug>
 #include <assert.h>
 #include <QGraphicsSceneMouseEvent>
+#include <cmath>
 
 PointView::PointView(CurveModel::Point const& pointModel, int index, QGraphicsItem* parent)
 :   TransformationNode(parent),
 	m_pointModel(pointModel),
-	m_index(index)
+    m_index(index),
+    m_gridRect(QRectF(0, 0, 2, 0))
 {
     assert(m_pointModel.is_valid());
     
@@ -58,6 +60,11 @@ bool PointView::isSelected() const
     return m_item->isSelected();
 }
 
+void PointView::setSnapGrid(QRectF gridRect)
+{
+    m_gridRect = gridRect;
+}
+
 void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveStartEvent* event)
 {
     Q_UNUSED(item);
@@ -72,6 +79,24 @@ void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveEve
     qDebug() << "PointView::GraphicsItemMoveEvent" << m_pointModel.id();
     QPointF scenePos = event->data()->scenePos() + m_offset;
     QPointF pos = parentItem()->mapFromScene(scenePos);
+
+    // Snap to grid
+    if (!m_gridRect.isNull())
+    {
+        const QPointF halfRect(m_gridRect.width() / 2.0, m_gridRect.width() / 2.0);
+
+        QPointF inGridPos = pos + halfRect - m_gridRect.bottomLeft();
+        inGridPos.setX(m_gridRect.width() > 0.0 ? std::fmod(inGridPos.x(), m_gridRect.width()) - halfRect.x() : 0.0);
+        inGridPos.setY(0.0);
+        // TODO:Vertical snapping doesn't work yet
+        //inGridPos.setY(m_gridRect.height() > 0.0 ? std::fmod(inGridPos.y(), m_gridRect.height()) - halfRect.y() : 0.0);
+
+        qDebug() << "Pos:" << pos << "inGridPos:" << inGridPos << "Grid:" << m_gridRect;
+
+        pos -= inGridPos;
+    }
+
+
     emit pointPositionChanged(m_pointModel.id(), pos.x(), pos.y(), m_index);
 }
 void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveEndEvent* event)

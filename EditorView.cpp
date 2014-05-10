@@ -56,8 +56,8 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
 {
     setRenderHint(QPainter::Antialiasing, true);
     setDragMode(QGraphicsView::RubberBandDrag);
-//    editor->setOptimizationFlags(QGraphicsView::DontSavePainterState);
-//    editor->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
+//    setOptimizationFlags(QGraphicsView::DontSavePainterState);
+//    setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
 //    setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     
     m_scene = new EditorGraphicsScene(this);
@@ -73,19 +73,13 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
     ScaleView* scaleView = new ScaleView(numberOfScaleLines, m_model->timeRange(), m_sceneLayer);
     connect(m_model.get(), &EditorModel::timeRangeChanged, scaleView, &ScaleView::setTimeRange);
 
-    BeatLinesView* beatView = new BeatLinesView(
-        m_model->timeRange(), m_timeScale, m_model->beatOffset(), m_model->bpm(), m_sceneLayer);
-    connect(m_model.get(), &EditorModel::timeRangeChanged, beatView, &BeatLinesView::setTimeRange);
-    connect(this, &EditorView::timeScaleChanged, beatView, &BeatLinesView::setTimeScale);
-    connect(m_model.get(), &EditorModel::beatOffsetChanged, beatView, &BeatLinesView::setBeatOffset);
-    connect(m_model.get(), &EditorModel::bpmChanged, beatView, &BeatLinesView::setBpm);
+    m_beatView = new BeatLinesView(m_model->timeRange(), m_timeScale, m_model->beatOffset(), m_model->bpm(), m_sceneLayer);
+    connect(m_model.get(), &EditorModel::timeRangeChanged, m_beatView, &BeatLinesView::setTimeRange);
+    connect(this, &EditorView::timeScaleChanged, m_beatView, &BeatLinesView::setTimeScale);
+    connect(m_model.get(), &EditorModel::beatOffsetChanged, m_beatView, &BeatLinesView::setBeatOffset);
+    connect(m_model.get(), &EditorModel::bpmChanged, m_beatView, &BeatLinesView::setBpm);
     connect(this, &EditorView::newCurveAdded, m_model.get(), &EditorModel::handleRequestToAddNewCurve);
 
-    // Set view transformation
-    QTransform transform;
-    transform.scale(1, -1);
-    setTransform(transform);
-    
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     
     connect(m_model.get(), &EditorModel::curveAdded, this, &EditorView::curveAdded);
@@ -94,6 +88,11 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent) :
 
     for (auto &curveModel : m_model->curves())
         curveAdded(curveModel);
+
+    // Set view transformation
+    QTransform transform;
+    transform.scale(1, -1);
+    setTransform(transform);
 
     updateTransformation();
 }
@@ -107,14 +106,21 @@ void EditorView::curveAdded(std::shared_ptr<CurveModel> curve)
     Iterator existing = m_curveViews.find(curve);
     assert(existing == m_curveViews.end());
     
-    m_curveViews.insert(curve, new CurveView(curve, m_sceneLayer));
+    // Create new curve view
+    CurveView* curveView = new CurveView(curve, m_sceneLayer);
+
+    // Setup snap grid synching to beat lines
+    connect(m_beatView, &BeatLinesView::snapGridChanged, curveView, &CurveView::setSnapGrid);
+    curveView->setSnapGrid(m_beatView->snapGrid());
+
+    m_curveViews.insert(curve, curveView);
 }
 
 void EditorView::curveRemoved(std::shared_ptr<CurveModel> curve)
 {
 	Iterator removed = m_curveViews.find(curve);
     assert(removed != m_curveViews.end());
-    
+
     delete removed.value();
   	m_curveViews.erase(removed);
 }
@@ -193,7 +199,6 @@ void EditorView::resizeEvent(QResizeEvent* event)
     QGraphicsView::resizeEvent(event);
     
     updateTransformation();
-    return;
 }
 
 void EditorView::wheelEvent(QWheelEvent* event)

@@ -36,14 +36,30 @@ public:
      */
     CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent);
     ~CurveView();
+
+signals:
+    /**
+     * @brief Curve snap grid has changed
+     * @param gridRect New snap grid
+     */
+    void snapGridChanged(QRectF gridRect);
     
 public slots:
+    /**
+     * @brief Set curve snap grid
+     * @param gridRect New snap grid
+     */
+    void setSnapGrid(QRectF gridRect);
+
+    /** @brief Add new points corresponding to all selected points in the curve. */
+    void duplicateSelectedPoints();
+    /** @brief Remove all selected points in the curve. */
+    void removeSelectedPoints();
+
+private slots:
     void pointAdded(PointId id);
     void pointUpdated(PointId id);
     void pointRemoved(PointId id);
-    
-    void duplicateSelectedPoints();
-    void removeSelectedPoints();
 
     void valueRangeChanged(RangeF valueRange);
     
@@ -52,7 +68,8 @@ public slots:
 private:
     QList<PointView*> findPointView(PointId id);
     void updateCurves();
-    
+    void updateTransformation();
+
     // Points, for each dimension there is a separate PointView.
     std::shared_ptr<CurveModel> m_model;
     QMultiMap<PointId, PointView*> m_pointViews;
@@ -68,7 +85,7 @@ private:
     QList<Spline*> m_splines;
 	QMap<Spline*, QGraphicsPathItem*> m_curveViews;
 
-    void updateTransformation();
+    QRectF m_snapGridRect;
 };
 
 

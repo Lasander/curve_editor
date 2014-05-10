@@ -16,7 +16,8 @@
 
 CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 :   TransformationNode(parent),
-	m_model(model)
+    m_model(model),
+    m_snapGridRect(QRectF())
 {
 	for (int i = 0; i < model->dimension(); ++i)
     {
@@ -40,7 +41,6 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
     for (auto pid : m_model->pointIds())
     	pointAdded(pid);
 
-
     connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::valueRangeChanged);
     updateTransformation();
 }
@@ -49,6 +49,60 @@ CurveView::~CurveView()
 {
 	for (auto p : m_splines)
 		delete p;
+}
+
+void CurveView::setSnapGrid(QRectF gridRect)
+{
+    m_snapGridRect = gridRect;
+    emit snapGridChanged(m_snapGridRect);
+}
+
+void CurveView::duplicateSelectedPoints()
+{
+    qDebug() << "CurveView::duplicateSelectedPoints";
+
+    QSet<PointId> toBeDuplicated;
+
+    for (auto &point : m_pointViews)
+        if (point->isSelected())
+            toBeDuplicated.insert(point->point().id());
+
+    for (auto pid : toBeDuplicated)
+    {
+        const CurveModel::Point point = m_model->point(pid);
+
+        const PointId nextPointId = m_model->nextPointId(pid);
+        if (isValid(nextPointId))
+        {
+            // Add point to between this and the next point matching the curve value at that point
+            const CurveModel::Point nextPoint = m_model->point(nextPointId);
+            float insertTime = (point.time() + nextPoint.time()) / 2.0f;
+
+            QList<float> insertValues;
+            for (int dim = 0; dim < m_splines.size(); ++dim)
+            {
+                insertValues.push_back(m_splines[dim]->value_at(insertTime));
+            }
+            m_model->addPoint(insertTime, insertValues);
+        }
+        else
+        {
+            // Add point to +1 second from the original point with the same value(s)
+            m_model->addPoint(point.time() + 1.0, point.values());
+        }
+    }
+}
+
+void CurveView::removeSelectedPoints()
+{
+    QSet<PointId> toBeRemoved;
+
+    for (auto &point : m_pointViews)
+        if (point->isSelected())
+            toBeRemoved.insert(point->point().id());
+
+    for (auto pid : toBeRemoved)
+        m_model->removePoint(pid);
 }
 
 void CurveView::pointAdded(PointId id)
@@ -66,6 +120,8 @@ void CurveView::pointAdded(PointId id)
         m_pointViews.insert(id, pointView);
         connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
         connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
+        connect(this, &CurveView::snapGridChanged, pointView, &PointView::setSnapGrid);
+        pointView->setSnapGrid(m_snapGridRect);
     }
 
     bool addOk = addToSpline(point);
@@ -115,54 +171,6 @@ void CurveView::pointRemoved(PointId id)
     assert(removeOk);
     
   	updateCurves();
-}
-
-void CurveView::duplicateSelectedPoints()
-{
-    qDebug() << "CurveView::duplicateSelectedPoints";
-
-    QSet<PointId> toBeDuplicated;
-    
-    for (auto &point : m_pointViews)
-    	if (point->isSelected())
-            toBeDuplicated.insert(point->point().id());
-    
-    for (auto pid : toBeDuplicated)
-    {
-        const CurveModel::Point point = m_model->point(pid);
-
-        const PointId nextPointId = m_model->nextPointId(pid);
-        if (isValid(nextPointId))
-        {
-            // Add point to between this and the next point matching the curve value at that point
-            const CurveModel::Point nextPoint = m_model->point(nextPointId);
-            float insertTime = (point.time() + nextPoint.time()) / 2.0f;
-
-            QList<float> insertValues;
-            for (int dim = 0; dim < m_splines.size(); ++dim)
-            {
-                insertValues.push_back(m_splines[dim]->value_at(insertTime));
-            }
-            m_model->addPoint(insertTime, insertValues);
-        }
-        else
-        {
-            // Add point to +1 second from the original point with the same value(s)
-            m_model->addPoint(point.time() + 1.0, point.values());
-        }
-    }
-}
-
-void CurveView::removeSelectedPoints()
-{
-    QSet<PointId> toBeRemoved;
-    
-    for (auto &point : m_pointViews)
-    	if (point->isSelected())
-            toBeRemoved.insert(point->point().id());
-
-    for (auto pid : toBeRemoved)
-        m_model->removePoint(pid);
 }
 
 void CurveView::valueRangeChanged(RangeF /*valueRange*/)

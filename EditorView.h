@@ -22,6 +22,7 @@ class QWheelEvent;
 QT_END_NAMESPACE
 
 class CurveView;
+class BeatLinesView;
 class CurveModel;
 class EditorModel;
 class ScrollPositionKeeper;
@@ -98,6 +99,7 @@ private:
     
     QGraphicsScene* m_scene;
     QGraphicsItem* m_sceneLayer;
+    BeatLinesView* m_beatView;
     std::shared_ptr<EditorModel> m_model;
     
     qreal m_timeScale;

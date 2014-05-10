@@ -53,7 +53,8 @@ BeatLinesView::BeatLinesView(RangeF timeRange, float timeScale, double beatOffse
     m_timeRange(timeRange),
     m_timeScale(timeScale),
     m_beatOffset(beatOffset),
-    m_bpm(bpm)
+    m_bpm(bpm),
+    m_snapGridRect(QRectF())
 {
     // Set transformation to scale y-axis to [0, 1] range
     qreal maxi = 1;
@@ -68,6 +69,11 @@ BeatLinesView::BeatLinesView(RangeF timeRange, float timeScale, double beatOffse
 
 BeatLinesView::~BeatLinesView()
 {
+}
+
+QRectF BeatLinesView::snapGrid() const
+{
+    return m_snapGridRect;
 }
 
 void BeatLinesView::setTimeScale(float timeScale)
@@ -136,9 +142,10 @@ void BeatLinesView::updateBeatLines()
 
     int barIndex = 0;
     int beatIndex = 0;
+    const float beatIncrement = beatStepInSecs * beatIndexStep;
 
     QGraphicsItem* thisAsGraphicsItem = this;
-    for (float beat = m_timeRange.min + m_beatOffset; beat < m_timeRange.max; beat += (beatStepInSecs * beatIndexStep))
+    for (float beat = m_timeRange.min + m_beatOffset; beat < m_timeRange.max; beat += beatIncrement)
     {
         m_beatLines.push_back(std::make_shared<BeatLineView>(beat, barIndex, beatIndex, thisAsGraphicsItem));
 
@@ -151,4 +158,8 @@ void BeatLinesView::updateBeatLines()
             beatIndex = 0;
         }
     }
+
+    // Calculate new snap grid (horizontal snap at every visible beat, no vertical snap)
+    m_snapGridRect = QRectF(m_beatOffset, 0, beatIncrement, 0);
+    emit snapGridChanged(m_snapGridRect);
 }

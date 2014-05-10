@@ -22,6 +22,7 @@ class BeatLinesView :
     public QObject,
     private TransformationNode
 {
+    Q_OBJECT
 public:
     /**
      * @brief Construct BeatLinesView
@@ -33,6 +34,18 @@ public:
      */
     BeatLinesView(RangeF timeRange, float timeScale, double beatOffset, double bpm, QGraphicsItem* parent);
     ~BeatLinesView();
+
+    /** @return Current snap grid */
+    QRectF snapGrid() const;
+
+signals:
+    /**
+     * @brief Notify that beat snap grid has changed.
+     * Snap grid contains an example grid cell, which can be used to determine closest snap position for any point.
+     *
+     * @param gridRect New snap grid
+     */
+    void snapGridChanged(QRectF gridRect);
 
 public slots:
     /**
@@ -63,6 +76,7 @@ private:
     float m_timeScale; ///< Time scale affecting how detailed beat lines to draw
     double m_beatOffset; ///< Offset to the first beat
     double m_bpm; ///< Beats per minute
+    QRectF m_snapGridRect;
 
     class BeatLineView;
     QList<std::shared_ptr<BeatLineView>> m_beatLines;
