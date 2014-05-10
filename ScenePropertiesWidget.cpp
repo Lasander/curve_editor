@@ -45,9 +45,7 @@ public:
 
         Qt::ItemFlags itemFlags = Qt::NoItemFlags;
         itemFlags |= Qt::ItemIsEnabled;
-
-        if (index.column() != 0)
-            itemFlags |= Qt::ItemIsEditable;
+        itemFlags |= Qt::ItemIsEditable;
 
         if (index.column() == 0)
             itemFlags |= Qt::ItemIsSelectable;
@@ -101,6 +99,16 @@ public:
             std::shared_ptr<CurveModel> curve = m_curves[index.row()];
             switch (index.column())
             {
+            case 0:
+            {
+                QString name = value.toString();
+                if (name.compare(curve->name()) != 0)
+                {
+                    curve->setName(name);
+                    return true;
+                }
+                break;
+            }
             case 1:
             {
                 bool ok = false;

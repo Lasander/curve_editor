@@ -232,6 +232,12 @@ public slots:
      */
     void setSelected(bool status);
 
+    /**
+     * @brief Set curve name
+     * @param name New name
+     */
+    void setName(QString name);
+
 private:
     using PointContainer = QMultiMap<float, Point>;
     using Iterator = PointContainer::Iterator;

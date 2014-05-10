@@ -357,6 +357,11 @@ void CurveModel::setSelected(bool status)
     }
 }
 
+void CurveModel::setName(QString name)
+{
+    m_name = name;
+}
+
 RangeF CurveModel::timeRange() const
 {
     return m_timeRange;
