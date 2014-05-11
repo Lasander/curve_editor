@@ -57,6 +57,20 @@ MainWindow::MainWindow(QWidget *parent)
 
     updateSceneActionStates();
 
+    // Create dock widgets
+    QDockWidget* pointDockWidget = new QDockWidget(tr("Point properties"), this);
+    pointDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_pointProperties = new PointPropertiesWidget;
+    pointDockWidget->setWidget(m_pointProperties);
+    addDockWidget(Qt::LeftDockWidgetArea, pointDockWidget);
+
+    QDockWidget* sceneDockWidget = new QDockWidget(tr("Scene sproperties"), this);
+    sceneDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_sceneProperties = new ScenePropertiesWidget;
+    sceneDockWidget->setWidget(m_sceneProperties);
+    addDockWidget(Qt::LeftDockWidgetArea, sceneDockWidget);
+
+
     // Create file menu
     QMenu* fileMenu = menuBar()->addMenu("&File");
     fileMenu->addAction(m_newSceneAction);
@@ -69,18 +83,10 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu* curvesMenu = menuBar()->addMenu("&Curves");
     curvesMenu->addAction(m_exportCurvesAction);
 
-    // Add dock widgets
-    QDockWidget* pointDockWidget = new QDockWidget(tr("Point properties"), this);
-    pointDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_pointProperties = new PointPropertiesWidget;
-    pointDockWidget->setWidget(m_pointProperties);
-    addDockWidget(Qt::LeftDockWidgetArea, pointDockWidget);
-
-    QDockWidget* sceneDockWidget = new QDockWidget(tr("Scene sproperties"), this);
-    sceneDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_sceneProperties = new ScenePropertiesWidget;
-    sceneDockWidget->setWidget(m_sceneProperties);
-    addDockWidget(Qt::LeftDockWidgetArea, sceneDockWidget);
+    // Create view menu
+    QMenu* viewMenu = menuBar()->addMenu("&View");
+    viewMenu->addAction(pointDockWidget->toggleViewAction());
+    viewMenu->addAction(sceneDockWidget->toggleViewAction());
 
     this->resize(1200, 500);
 }
