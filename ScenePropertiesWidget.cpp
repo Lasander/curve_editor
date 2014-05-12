@@ -8,6 +8,7 @@
 #include <QTableView>
 #include <QAbstractTableModel>
 #include <QHeaderView>
+#include <QLabel>
 
 class CurveTableModel : public QAbstractTableModel
 {
@@ -242,26 +243,37 @@ private:
 
 ScenePropertiesWidget::ScenePropertiesWidget(QWidget * parent)
 :	QWidget(parent),
-    m_gridLayout(new QGridLayout())
+    m_gridLayout(new QGridLayout(this))
 {
-    QVBoxLayout* vboxLayout = new QVBoxLayout(this);
-    vboxLayout->addLayout(m_gridLayout);
-
+    QLabel* beatOffsetLabel = new QLabel("1st beat", this);
     m_beatOffsetSpinner = new QDoubleSpinBox(this);
     m_beatOffsetSpinner->setSuffix(" s");
     m_beatOffsetSpinner->setRange(-60, 60);
     m_beatOffsetSpinner->setSingleStep(0.2);
     m_beatOffsetSpinner->setValue(0);
     m_beatOffsetSpinner->setEnabled(false);
-    vboxLayout->addWidget(m_beatOffsetSpinner);
+    m_gridLayout->addWidget(beatOffsetLabel, 0, 0);
+    m_gridLayout->addWidget(m_beatOffsetSpinner, 0, 1);
 
-    m_bpmSpinner= new QDoubleSpinBox(this);
+    QLabel* bpmLabel = new QLabel("Bpm", this);
+    m_bpmSpinner = new QDoubleSpinBox(this);
     m_bpmSpinner->setSuffix(" bpm");
     m_bpmSpinner->setRange(10, 360);
     m_bpmSpinner->setSingleStep(0.2);
     m_bpmSpinner->setValue(80);
     m_bpmSpinner->setEnabled(false);
-    vboxLayout->addWidget(m_bpmSpinner);
+    m_gridLayout->addWidget(bpmLabel, 1, 0);
+    m_gridLayout->addWidget(m_bpmSpinner, 1, 1);
+
+    QLabel* timeLineLengthLabel = new QLabel("Timeline", this);
+    m_timeLineLength = new QDoubleSpinBox(this);
+    m_timeLineLength->setSuffix(" s");
+    m_timeLineLength->setRange(10, 1000);
+    m_timeLineLength->setSingleStep(1);
+    m_timeLineLength->setValue(240);
+    m_timeLineLength->setEnabled(false);
+    m_gridLayout->addWidget(timeLineLengthLabel, 2, 0);
+    m_gridLayout->addWidget(m_timeLineLength, 2, 1);
 
     m_curveTableModel = new CurveTableModel;
     m_curveTable = new QTableView(this);
@@ -269,13 +281,13 @@ ScenePropertiesWidget::ScenePropertiesWidget(QWidget * parent)
     m_curveTable->setSelectionModel(m_curveTableModel->getSelectionModel());
     // Make columns stretch to available space
     m_curveTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    vboxLayout->addWidget(m_curveTable);
+    m_gridLayout->addWidget(m_curveTable, 3, 0, 1, 2);
 
     // Listen to table selection changes
     connect(m_curveTable->selectionModel(), &QItemSelectionModel::selectionChanged,
             m_curveTableModel, &CurveTableModel::tableRowsSelected);
 
-    this->setLayout(vboxLayout);
+    this->setLayout(m_gridLayout);
 }
 
 ScenePropertiesWidget::~ScenePropertiesWidget()
@@ -294,6 +306,7 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
         // Disconnect from old scene
         disconnect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
         disconnect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
+        disconnect(m_timeLineLength, SIGNAL(valueChanged(double)), this, SLOT(setTimeLineLength(double)));
         disconnect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
         disconnect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
         disconnect(m_sceneModel.get(), &SceneModel::curveSelected, m_curveTableModel, &CurveTableModel::selectCurve);
@@ -305,6 +318,7 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
         // Disable beat offset and bpm spinners
         m_beatOffsetSpinner->setEnabled(false);
         m_bpmSpinner->setEnabled(false);
+        m_timeLineLength->setEnabled(false);
     }
 
     // Change the model
@@ -315,6 +329,7 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
         // Connect to new scene
         connect(m_beatOffsetSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBeatOffset(double)));
         connect(m_bpmSpinner, SIGNAL(valueChanged(double)), m_sceneModel.get(), SLOT(setBpm(double)));
+        connect(m_timeLineLength, SIGNAL(valueChanged(double)), this, SLOT(setTimeLineLength(double)));
         connect(m_sceneModel.get(), &SceneModel::curveAdded, m_curveTableModel, &CurveTableModel::addCurve);
         connect(m_sceneModel.get(), &SceneModel::curveRemoved, m_curveTableModel, &CurveTableModel::removeCurve);
         connect(m_sceneModel.get(), &SceneModel::curveSelected, m_curveTableModel, &CurveTableModel::selectCurve);
@@ -328,6 +343,10 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
         m_bpmSpinner->setValue(m_sceneModel->bpm());
         m_bpmSpinner->setEnabled(true);
 
+        // Enable and initialize bpm spinner
+        m_timeLineLength->setValue(m_sceneModel->timeRange().max);
+        m_timeLineLength->setEnabled(true);
+
         // Add existing curves to the curve table
         for (auto curve : m_sceneModel->curves())
         {
@@ -336,5 +355,13 @@ void ScenePropertiesWidget::setSceneModel(std::shared_ptr<SceneModel> sceneModel
                 m_curveTableModel->selectCurve(curve);
         }
     }
-
 }
+
+void ScenePropertiesWidget::setTimeLineLength(double length)
+{
+    if (!m_sceneModel)
+        return;
+
+    m_sceneModel->setTimeRange(RangeF(0, static_cast<float>(length)));
+}
+

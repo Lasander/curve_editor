@@ -25,12 +25,17 @@ public:
 public slots:
     void setSceneModel(std::shared_ptr<SceneModel> sceneModel);
 
+private slots:
+    void setTimeLineLength(double length);
+
 private:
     QGridLayout* m_gridLayout;
     std::shared_ptr<SceneModel> m_sceneModel;
 
     QDoubleSpinBox* m_beatOffsetSpinner;
     QDoubleSpinBox* m_bpmSpinner;
+
+    QDoubleSpinBox* m_timeLineLength;
 
     CurveTableModel* m_curveTableModel;
     QTableView* m_curveTable;
