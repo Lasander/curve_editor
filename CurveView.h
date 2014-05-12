@@ -59,8 +59,12 @@ public slots:
 
     /** @brief Add new points corresponding to all selected points in the curve. */
     void duplicateSelectedPoints();
+
     /** @brief Remove all selected points in the curve. */
     void removeSelectedPoints();
+
+
+    void highlightCurve(bool highlight);
 
 private slots:
     void pointAdded(PointId id);
@@ -93,6 +97,8 @@ private:
 
     QRectF m_snapGridRect;
     bool m_snapToGrid;
+
+    bool m_highlightCurve;
 };
 
 

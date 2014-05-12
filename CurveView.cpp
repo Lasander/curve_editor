@@ -18,7 +18,8 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 :   TransformationNode(parent),
     m_model(model),
     m_snapGridRect(QRectF()),
-    m_snapToGrid(false)
+    m_snapToGrid(false),
+    m_highlightCurve(false)
 {
 	for (int i = 0; i < model->dimension(); ++i)
     {
@@ -26,14 +27,13 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 		m_splines.insert(i, spline);
         
         QGraphicsPathItem* curveItem = new QGraphicsPathItem(this);
-        QPen curvePen(Qt::blue);
-        curvePen.setCosmetic(true);
-        curveItem->setPen(curvePen);
-        
         m_curveViews[spline] = curveItem;
     }
     
-    // Set transformation
+    connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::valueRangeChanged);
+
+    m_highlightCurve = m_model->isSelected();
+    connect(m_model.get(), &CurveModel::selectedChanged, this, &CurveView::highlightCurve);
     
     connect(m_model.get(), &CurveModel::pointAdded, this, &CurveView::pointAdded);
     connect(m_model.get(), &CurveModel::pointUpdated, this, &CurveView::pointUpdated);
@@ -42,7 +42,6 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
     for (auto pid : m_model->pointIds())
     	pointAdded(pid);
 
-    connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::valueRangeChanged);
     updateTransformation();
 }
 
@@ -118,6 +117,16 @@ void CurveView::removeSelectedPoints()
     for (auto pid : toBeRemoved)
         m_model->removePoint(pid);
 }
+
+void CurveView::highlightCurve(bool highlight)
+{
+    if (m_highlightCurve != highlight)
+    {
+        m_highlightCurve = highlight;
+        updateCurves();
+    }
+}
+
 
 void CurveView::pointAdded(PointId id)
 {
@@ -206,6 +215,15 @@ void CurveView::updateCurves()
 {
     static const float ESPILON = 0.1;
 
+    QPen curvePen(Qt::blue);
+    curvePen.setCosmetic(true);
+    if (m_highlightCurve)
+    {
+        // Highlight curve by boosting width and darkening color
+        curvePen.setWidth(curvePen.width() + 1);
+        curvePen.setColor(curvePen.color().darker(100));
+    }
+
     for (auto spline : m_splines)
     {
         auto cur = spline->data().begin();
@@ -253,6 +271,7 @@ void CurveView::updateCurves()
             ++next;
         }
         
+        m_curveViews[spline]->setPen(curvePen);
         m_curveViews[spline]->setPath(path);
     }
 }
