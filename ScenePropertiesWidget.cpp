@@ -171,7 +171,9 @@ public slots:
 
     void clearCurves()
     {
+        beginResetModel();
         m_curves.clear();
+        endResetModel();
     }
 
     void selectCurve(std::shared_ptr<CurveModel> curve)
