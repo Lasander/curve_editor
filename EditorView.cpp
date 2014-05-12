@@ -21,6 +21,7 @@
 #include <QAction>
 #include <QScrollBar>
 #include <QGridLayout>
+#include <QCheckBox>
 
 EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent)
   : QWidget(parent),
@@ -30,12 +31,12 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent)
     setLayout(gridLayout);
 
     m_view = new EditorGraphicsView(this);
-    gridLayout->addWidget(m_view, 0, 0);
+
+    m_snapToGrid = new QCheckBox("Snap", this);
 
     const int numberOfScaleLines = 5;
-
-    ScaleView* scaleView = new ScaleView(numberOfScaleLines, m_model->timeRange(), m_view->sceneLayer());
-    connect(m_model.get(), &EditorModel::timeRangeChanged, scaleView, &ScaleView::setTimeRange);
+    m_scaleView = new ScaleView(numberOfScaleLines, m_model->timeRange(), m_view->sceneLayer());
+    connect(m_model.get(), &EditorModel::timeRangeChanged, m_scaleView, &ScaleView::setTimeRange);
 
     m_beatView = new BeatLinesView(m_model->timeRange(), m_view->timeScale(), m_model->beatOffset(), m_model->bpm(), m_view->sceneLayer());
     connect(m_model.get(), &EditorModel::timeRangeChanged, m_beatView, &BeatLinesView::setTimeRange);
@@ -47,6 +48,9 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent)
     connect(m_model.get(), &EditorModel::curveAdded, this, &EditorView::curveAdded);
     connect(m_model.get(), &EditorModel::curveRemoved, this, &EditorView::curveRemoved);
     connect(m_model.get(), &EditorModel::timeRangeChanged, this, &EditorView::timeRangeChanged);
+
+    gridLayout->addWidget(m_view, 0, 0);
+    gridLayout->addWidget(m_snapToGrid, 0, 1);
 
     for (auto &curveModel : m_model->curves())
         curveAdded(curveModel);
@@ -65,6 +69,8 @@ void EditorView::curveAdded(std::shared_ptr<CurveModel> curve)
     CurveView* curveView = new CurveView(curve, m_view->sceneLayer());
 
     // Setup snap grid synching to beat lines
+    connect(m_snapToGrid, SIGNAL(toggled(bool)), curveView, SLOT(setSnapToGrid(bool)));
+    curveView->setSnapToGrid(m_snapToGrid->checkState() == Qt::Checked);
     connect(m_beatView, &BeatLinesView::snapGridChanged, curveView, &CurveView::setSnapGrid);
     curveView->setSnapGrid(m_beatView->snapGrid());
 

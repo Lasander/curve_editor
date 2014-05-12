@@ -51,6 +51,12 @@ public slots:
      */
     void setSnapGrid(QRectF gridRect);
 
+    /**
+     * @brief Set snap-to-grid
+     * @param snapToGrid True if curve should snap to define snap grid.
+     */
+    void setSnapToGrid(bool snapToGrid);
+
     /** @brief Add new points corresponding to all selected points in the curve. */
     void duplicateSelectedPoints();
     /** @brief Remove all selected points in the curve. */
@@ -86,6 +92,7 @@ private:
 	QMap<Spline*, QGraphicsPathItem*> m_curveViews;
 
     QRectF m_snapGridRect;
+    bool m_snapToGrid;
 };
 
 

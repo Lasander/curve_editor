@@ -17,7 +17,8 @@
 CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 :   TransformationNode(parent),
     m_model(model),
-    m_snapGridRect(QRectF())
+    m_snapGridRect(QRectF()),
+    m_snapToGrid(false)
 {
 	for (int i = 0; i < model->dimension(); ++i)
     {
@@ -53,8 +54,21 @@ CurveView::~CurveView()
 
 void CurveView::setSnapGrid(QRectF gridRect)
 {
-    m_snapGridRect = gridRect;
-    emit snapGridChanged(m_snapGridRect);
+    if (m_snapGridRect != gridRect)
+    {
+        m_snapGridRect = gridRect;
+        if (m_snapToGrid)
+            emit snapGridChanged(m_snapGridRect);
+    }
+}
+
+void CurveView::setSnapToGrid(bool snapToGrid)
+{
+    if (m_snapToGrid != snapToGrid)
+    {
+        m_snapToGrid = snapToGrid;
+        emit snapGridChanged(m_snapToGrid ? m_snapGridRect : QRectF());
+    }
 }
 
 void CurveView::duplicateSelectedPoints()

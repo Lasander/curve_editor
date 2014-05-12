@@ -17,6 +17,7 @@
 
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
+class QCheckBox;
 QT_END_NAMESPACE
 
 class CurveView;
@@ -25,6 +26,7 @@ class CurveModel;
 class EditorModel;
 class ScrollPositionKeeper;
 class EditorGraphicsView;
+class ScaleView;
 
 /**
  * @brief EditorView displays the contents of an EditorModel (@see EditorModel) and
@@ -90,12 +92,10 @@ private slots: /** Signals from EditorModel */
 private:
     virtual void contextMenuEvent(QContextMenuEvent *event) override;
     
-    void setTimeScale(qreal timeScale);
-    void updateTransformation();
-    QRectF calculateSceneItemsBoundingRect() const;
-    
     EditorGraphicsView* m_view;
     BeatLinesView* m_beatView;
+    ScaleView* m_scaleView;
+    QCheckBox* m_snapToGrid;
     std::shared_ptr<EditorModel> m_model;
 
     /** Curve container provides mapping between curve models and views. */
