@@ -36,7 +36,8 @@ SOURCES += \
     SceneModel.cpp \
     ScenePropertiesWidget.cpp \
     PointPropertiesWidget.cpp \
-    BeatLinesView.cpp
+    BeatLinesView.cpp \
+    EditorGraphicsView.cpp
 
 HEADERS  += \
     CurveModel.h \
@@ -60,4 +61,5 @@ HEADERS  += \
     ScenePropertiesWidget.h \
     PointId.h \
     PointPropertiesWidget.h \
-    BeatLinesView.h
+    BeatLinesView.h \
+    EditorGraphicsView.h

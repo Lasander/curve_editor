@@ -6,19 +6,17 @@
 //
 //
 
-#ifndef __CurveEditor__EditorView__
-#define __CurveEditor__EditorView__
+#ifndef EDITORVIEW_H
+#define EDITORVIEW_H
 
 #include "RangeF.h"
 #include <QObject>
-#include <QGraphicsView>
 #include <QMap>
+#include <QWidget>
 #include <memory>
 
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
-class QResizeEvent;
-class QWheelEvent;
 QT_END_NAMESPACE
 
 class CurveView;
@@ -26,12 +24,13 @@ class BeatLinesView;
 class CurveModel;
 class EditorModel;
 class ScrollPositionKeeper;
+class EditorGraphicsView;
 
 /**
  * @brief EditorView displays the contents of an EditorModel (@see EditorModel) and
  * handles the UI events.
  */
-class EditorView : public QGraphicsView
+class EditorView : public QWidget
 {
     Q_OBJECT
     
@@ -89,21 +88,15 @@ private slots: /** Signals from EditorModel */
     void addNewCurve();
 
 private:
-    void contextMenuEvent(QContextMenuEvent *event);
-    void resizeEvent(QResizeEvent* event);
-    void wheelEvent(QWheelEvent* event);
+    virtual void contextMenuEvent(QContextMenuEvent *event) override;
     
     void setTimeScale(qreal timeScale);
     void updateTransformation();
     QRectF calculateSceneItemsBoundingRect() const;
     
-    QGraphicsScene* m_scene;
-    QGraphicsItem* m_sceneLayer;
+    EditorGraphicsView* m_view;
     BeatLinesView* m_beatView;
     std::shared_ptr<EditorModel> m_model;
-    
-    qreal m_timeScale;
-    ScrollPositionKeeper* m_horizontalScrollKeeper;
 
     /** Curve container provides mapping between curve models and views. */
     using Container = QMap<std::shared_ptr<CurveModel>, CurveView*>;
@@ -112,4 +105,4 @@ private:
     Container m_curveViews;
 };
 
-#endif /* defined(__CurveEditor__EditorView__) */
+#endif /* EDITORVIEW_H */
