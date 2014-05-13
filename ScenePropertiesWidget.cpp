@@ -63,8 +63,8 @@ public:
             switch (index.column())
             {
             case 0: return curve->name();
-            case 1: return curve->valueRange().min; //QString::number(curve->valueRange().min, 'f', 1);
-            case 2: return curve->valueRange().max; //QString::number(curve->valueRange().max, 'f', 1);
+            case 1: return curve->valueRange().min;
+            case 2: return curve->valueRange().max;
             default: break;
             }
             return "Data";
@@ -103,7 +103,7 @@ public:
             case 0:
             {
                 QString name = value.toString();
-                if (name.compare(curve->name()) != 0)
+                if ((name.compare(curve->name()) != 0) && !name.isEmpty())
                 {
                     curve->setName(name);
                     return true;
