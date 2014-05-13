@@ -11,22 +11,16 @@
 
 #include "PointId.h"
 #include "RangeF.h"
+#include "CurveModelAbs.h"
 #include <QObject>
 #include <QMultiMap>
 #include <QDebug>
 
 /**
- * @brief Check point if validity
- * @param pointId Id
- * @return True if the id is valid
- */
-bool isValid(PointId pointId);
-
-/**
  * CurveModel represents a (potentially multi-dimensional) curve as its control points.
  * Derived from QObject for signals and slots.
  */
-class CurveModel : public QObject
+class CurveModel : public CurveModelAbs
 {
     Q_OBJECT
     
@@ -52,7 +46,7 @@ public:
         PointId id() const;
         
 	private:
-        /** \brief Construct invalid point */
+        /** @brief Construct invalid point */
         Point();
 
         /** @brief Construct valid point, optionally with an existing id */
@@ -67,11 +61,6 @@ public:
         QList<bool> isSelected() const;
         void setSelected(bool isSelected, int index);
         
-        /** @return New unique point id's */
-        static PointId generateId();
-        /** @return Invalid point id */
-        static PointId invalidId();
-
         // Allow curve to create points
         friend class CurveModel;
         
@@ -118,18 +107,9 @@ public:
 
     /** @return The number of values in each point. */
     int dimension() const;
-	
-    /** @return Curve time range [start, end]. */
-    RangeF timeRange() const;
 
     /** @return Curve value range [min, max]. */
     RangeF valueRange() const;
-
-    /** @return True if curve is selected. */
-    bool isSelected() const;
-
-    /** @return Curve name. */
-    const QString& name() const;
 
 signals:
     /** @brief A new point was added. */
@@ -143,13 +123,8 @@ signals:
     /** @brief An existing point was removed. */
     void pointRemoved(PointId id);
 
-    /** @brief Curve time range changed. */
-    void timeRangeChanged(RangeF newRange);
     /** @brief Curve value range changed. */
     void valueRangeChanged(RangeF newRange);
-
-    /** @brief Curve was selected or deselected. */
-    void selectedChanged(bool status);
 
 public slots:
     /**
@@ -216,32 +191,17 @@ public slots:
     void removePoint(PointId id);
 
     /**
-     * @brief Set curve time range (x-axis)
-     * @param newRange New time range
-     */
-    void setTimeRange(RangeF newRange);
-    /**
      * @brief Set curve value range (y-axis)
      * @param newRange New value range
      */
     void setValueRange(RangeF newRange);
-    
-    /**
-     * @brief Set curve selection status
-     * @param status True for selected, false for deselected.
-     */
-    void setSelected(bool status);
-
-    /**
-     * @brief Set curve name
-     * @param name New name
-     */
-    void setName(QString name);
 
 private:
     using PointContainer = QMultiMap<float, Point>;
     using Iterator = PointContainer::Iterator;
     using ConstIterator = PointContainer::ConstIterator;
+
+    virtual void forcePointsToTimeRange(RangeF newRange);
     
     Iterator findPoint(PointId id);
     ConstIterator findPoint(PointId id) const;
@@ -251,13 +211,7 @@ private:
     
     PointContainer m_points;
     const int m_dimension;
-    
-    RangeF m_timeRange;
     RangeF m_valueRange;
-
-    bool m_selected;
-
-    QString m_name;
 };
 
 inline float CurveModel::Point::time() const

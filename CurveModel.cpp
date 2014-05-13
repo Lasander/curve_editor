@@ -40,15 +40,6 @@ private:
 /////////////////////////////////////////
 /////////////////////////////////////////
 
-bool isValid(PointId pointId)
-{
-    // Zero is invalid
-    return pointId != 0;
-}
-
-/////////////////////////////////////////
-/////////////////////////////////////////
-
 
 CurveModel::Point::Point()
 :	m_isValid(false), m_isSelected({false}), m_id(0), m_time(0), m_values({0}),
@@ -93,32 +84,13 @@ void CurveModel::Point::setSelected(bool isSelected, int index)
     m_isSelected[index] = isSelected;
 }
 
-PointId CurveModel::Point::generateId()
-{
-    static PointId g_id = 1;
-    PointId id = ++g_id;
-    
-    // Skip 0 as invalid id
-    if (id == 0)
-        return generateId();
-    
-    return id;
-}
-
-PointId CurveModel::Point::invalidId()
-{
-    return 0;
-}
-
 /////////////////////////////////////////
 /////////////////////////////////////////
 
 CurveModel::CurveModel(int dimension, const QString& name)
-:	m_dimension(dimension),
-    m_timeRange(),
-    m_valueRange(-100, 100),
-    m_selected(false),
-    m_name(name)
+:	CurveModelAbs(name),
+    m_dimension(dimension),
+    m_valueRange(-100, 100)
 {
 }
 
@@ -142,7 +114,7 @@ PointId CurveModel::nextPointId(PointId id) const
     if (it == m_points.end())
     {
         qWarning() << "Trying to get for unknown point id:" << id;
-        return Point::invalidId();
+        return invalidId();
     }
 
     // Get next
@@ -150,7 +122,7 @@ PointId CurveModel::nextPointId(PointId id) const
     if (it == m_points.end())
     {
         // No next point
-        return Point::invalidId();
+        return invalidId();
     }
 
     return it->id();
@@ -300,27 +272,20 @@ void CurveModel::removePoint(PointId id)
     emit pointRemoved(id);
 }
 
-void CurveModel::setTimeRange(RangeF newRange)
+void CurveModel::forcePointsToTimeRange(RangeF newRange)
 {
-    if (m_timeRange != newRange)
+    // Ensure all points fit to the new time range
+    for (auto pid : pointIds())
     {
-        m_timeRange = newRange;
-
-        // Ensure all points fit to the new time range
-        for (auto pid : pointIds())
+        Iterator it = findPoint(pid);
+        if (it->time() < newRange.min || it->time() > newRange.max)
         {
-            Iterator it = findPoint(pid);
-            if (it->time() < m_timeRange.min || it->time() > m_timeRange.max)
+            for (int d = 0; d < m_dimension; ++d)
             {
-                for (int d = 0; d < m_dimension; ++d)
-                {
-                    updatePoint(pid, it->time(), it->value(d), d); // updatePoint will do necessary clamping
-                    it = findPoint(pid); // re-validate iterator
-                }
+                updatePoint(pid, it->time(), it->value(d), d); // updatePoint will do necessary clamping
+                it = findPoint(pid); // re-validate iterator
             }
         }
-
-        emit timeRangeChanged(m_timeRange);
     }
 }
 
@@ -348,38 +313,9 @@ void CurveModel::setValueRange(RangeF newRange)
     }
 }
 
-void CurveModel::setSelected(bool status)
-{
-    if (m_selected != status)
-    {
-        m_selected = status;
-        emit selectedChanged(m_selected);
-    }
-}
-
-void CurveModel::setName(QString name)
-{
-    m_name = name;
-}
-
-RangeF CurveModel::timeRange() const
-{
-    return m_timeRange;
-}
-
 RangeF CurveModel::valueRange() const
 {
     return m_valueRange;
-}
-
-bool CurveModel::isSelected() const
-{
-    return m_selected;
-}
-
-const QString& CurveModel::name() const
-{
-    return m_name;
 }
 
 CurveModel::Iterator CurveModel::findPoint(PointId id)
@@ -406,7 +342,7 @@ CurveModel::ConstIterator CurveModel::findPoint(PointId id) const
 
 float CurveModel::limitTimeToRange(float time) const
 {
-    return m_timeRange.clampToRange(time);
+    return timeRange().clampToRange(time);
 }
 
 float CurveModel::limitValueToScale(float value) const
