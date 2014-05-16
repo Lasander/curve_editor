@@ -10,37 +10,6 @@
 #include <assert.h>
 #include <utility>
 
-namespace {
-    
-class TimeRangeChangeChecker
-{
-public:
-    TimeRangeChangeChecker(CurveModel& container)
-    : 	m_container(container),
-    	m_startRange(container.timeRange())
-    {
-    }
-    
-    ~TimeRangeChangeChecker()
-    {
-        RangeF endRange = m_container.timeRange();
-        if (endRange != m_startRange)
-        {
-			m_container.timeRangeChanged(endRange);
-        }
-    }
-    
-private:
-    CurveModel& m_container;
-    RangeF m_startRange;
-};
-
-} // anonymous namespace
-
-/////////////////////////////////////////
-/////////////////////////////////////////
-
-
 CurveModel::Point::Point()
 :	m_isValid(false), m_isSelected({false}), m_id(PointId::invalidId()), m_time(0), m_values({0}),
 	m_tension(0), m_bias(0), m_continuity(0)
@@ -159,8 +128,6 @@ void CurveModel::addPoint(float time, QList<float> values, float tension, float 
         qWarning() << "Incorrect value dimension:" << values.size() << "expected:" << m_dimension;
         return;
     }
-
-    TimeRangeChangeChecker rangeCheck(*this);
     
     time = limitTimeToRange(time);
     values = limitValuesToScale(values);
@@ -184,8 +151,6 @@ void CurveModel::updatePoint(PointId id, float time, float value, int index)
         qWarning() << "Incorrect point dimension:" << index<< "expected: [ 0 -" << m_dimension - 1 << "]";
         return;
     }
-    
-    TimeRangeChangeChecker rangeCheck(*this);
 
     Iterator it = findPoint(id);
     if (it == m_points.end())
@@ -254,8 +219,6 @@ void CurveModel::pointSelectedChanged(PointId id, int index, bool isSelected)
 
 void CurveModel::removePoint(PointId id)
 {
-    TimeRangeChangeChecker rangeCheck(*this);
-
     Iterator it = findPoint(id);
     if (it == m_points.end())
     {
