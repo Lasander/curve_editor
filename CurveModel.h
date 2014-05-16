@@ -112,17 +112,6 @@ public:
     RangeF valueRange() const;
 
 signals:
-    /** @brief A new point was added. */
-    void pointAdded(PointId id);
-    /** @brief Data for an existing point was modified. */
-    void pointUpdated(PointId id);
-    /** @brief Point was selected. */
-    void pointSelected(PointId id);
-    /** @brief Point was deselected. */
-    void pointDeselected(PointId id);
-    /** @brief An existing point was removed. */
-    void pointRemoved(PointId id);
-
     /** @brief Curve value range changed. */
     void valueRangeChanged(RangeF newRange);
 
