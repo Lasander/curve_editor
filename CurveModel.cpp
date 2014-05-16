@@ -42,19 +42,19 @@ private:
 
 
 CurveModel::Point::Point()
-:	m_isValid(false), m_isSelected({false}), m_id(0), m_time(0), m_values({0}),
+:	m_isValid(false), m_isSelected({false}), m_id(PointId::invalidId()), m_time(0), m_values({0}),
 	m_tension(0), m_bias(0), m_continuity(0)
 {
 }
 
 CurveModel::Point::Point(float time, QList<float> values, QList<bool> isSelected, PointId id)
-:	m_isValid(true), m_isSelected(isSelected), m_id(id == 0 ? generateId() : id), m_time(time), m_values(values),
+:	m_isValid(true), m_isSelected(isSelected), m_id(id.isValid() ? id : PointId::generateId()), m_time(time), m_values(values),
 	m_tension(0), m_bias(0), m_continuity(0)
 {
 }
 
 CurveModel::Point::Point(float time, QList<float> values, float tension, float bias, float continuity, QList<bool> isSelected, PointId id)
-:	m_isValid(true), m_isSelected(isSelected), m_id(id == 0 ? generateId() : id), m_time(time), m_values(values),
+:	m_isValid(true), m_isSelected(isSelected), m_id(id.isValid() ? id : PointId::generateId()), m_time(time), m_values(values),
 	m_tension(tension), m_bias(bias), m_continuity(continuity)
 {
 }
@@ -114,7 +114,7 @@ PointId CurveModel::nextPointId(PointId id) const
     if (it == m_points.end())
     {
         qWarning() << "Trying to get for unknown point id:" << id;
-        return invalidId();
+        return PointId::invalidId();
     }
 
     // Get next
@@ -122,7 +122,7 @@ PointId CurveModel::nextPointId(PointId id) const
     if (it == m_points.end())
     {
         // No next point
-        return invalidId();
+        return PointId::invalidId();
     }
 
     return it->id();

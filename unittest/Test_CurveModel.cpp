@@ -132,13 +132,13 @@ void Test_CurveModel::testPointAddUpdateRemove()
         // Try to update point with another id
         {
             EXPECT_ERRORS;
-            curve.updatePoint(first + 1, 2, 5, 0);
+            curve.updatePoint(PointId::generateId(), 2, 5, 0);
         }
 
         // Try to update point with invalid id
         {
             EXPECT_ERRORS;
-            curve.updatePoint(PointId(), 2, 5, 0);
+            curve.updatePoint(PointId::invalidId(), 2, 5, 0);
         }
         QCOMPARE(receiver.addedCount, 1);
         QCOMPARE(receiver.updatedCount, 0);
@@ -174,13 +174,13 @@ void Test_CurveModel::testPointAddUpdateRemove()
         // Try to remove point with another id
         {
             EXPECT_ERRORS;
-            curve.removePoint(first + 1);
+            curve.removePoint(PointId::generateId());
         }
 
         // Try to update point with invalid id
         {
             EXPECT_ERRORS;
-            curve.removePoint(PointId());
+            curve.removePoint(PointId::invalidId());
         }
         QCOMPARE(receiver.addedCount, 1);
         QCOMPARE(receiver.removedCount, 0);

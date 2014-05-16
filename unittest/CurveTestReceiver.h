@@ -71,11 +71,11 @@ public:
 
     void reset()
     {
-        lastAdded = PointId();
+        lastAdded = PointId::invalidId();
         addedCount = 0;
-        lastUpdated = PointId();
+        lastUpdated = PointId::invalidId();
         updatedCount = 0;
-        lastRemoved = PointId();
+        lastRemoved = PointId::invalidId();
         removedCount = 0;
 
         lastTimeRange = RangeF();
@@ -88,6 +88,9 @@ public:
     }
 
     CurveTestReceiver(CurveModel const& curve)
+      : lastAdded(PointId::invalidId()),
+        lastUpdated(PointId::invalidId()),
+        lastRemoved(PointId::invalidId())
     {
         reset();
 

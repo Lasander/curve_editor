@@ -50,8 +50,8 @@ public:
         Point();
 
         /** @brief Construct valid point, optionally with an existing id */
-        Point(float time, QList<float> values, QList<bool> isSelected, PointId id = 0);
-        Point(float time, QList<float> values, float tension, float bias, float continuity, QList<bool> isSelected, PointId id = 0);
+        Point(float time, QList<float> values, QList<bool> isSelected, PointId id = PointId::invalidId());
+        Point(float time, QList<float> values, float tension, float bias, float continuity, QList<bool> isSelected, PointId id = PointId::invalidId());
         void updateParams(float tension, float bias, float continuity);
 
         bool operator==(Point const& other) const;

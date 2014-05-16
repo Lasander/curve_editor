@@ -85,7 +85,7 @@ void CurveView::duplicateSelectedPoints()
         const CurveModel::Point point = m_model->point(pid);
 
         const PointId nextPointId = m_model->nextPointId(pid);
-        if (isValid(nextPointId))
+        if (nextPointId.isValid())
         {
             // Add point to between this and the next point matching the curve value at that point
             const CurveModel::Point nextPoint = m_model->point(nextPointId);
