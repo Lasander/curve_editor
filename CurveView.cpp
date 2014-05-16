@@ -23,7 +23,7 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 {
 	for (int i = 0; i < model->dimension(); ++i)
     {
-        Spline* spline = new Spline(SplineDataSet());
+        Spline* spline = new Spline;
 		m_splines.insert(i, spline);
         
         QGraphicsPathItem* curveItem = new QGraphicsPathItem(this);

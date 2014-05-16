@@ -10,7 +10,7 @@ public:
     typedef typename DataSet::result_type result_type;
 
 public:
-    cubic_hermite_spline(DataSet const& data);
+    cubic_hermite_spline();
     cubic_hermite_spline const& operator=(cubic_hermite_spline const& other)
     {
         m_data = other.m_data;

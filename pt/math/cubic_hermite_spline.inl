@@ -6,9 +6,8 @@ namespace pt { namespace math {
 // cubic_hermite_spline
 
 template<typename DataSet>
-inline cubic_hermite_spline<DataSet>::cubic_hermite_spline(
-    DataSet const& data)
-:   m_data(data)
+inline cubic_hermite_spline<DataSet>::cubic_hermite_spline()
+:   m_data()
 {
 }
 

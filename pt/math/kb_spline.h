@@ -10,8 +10,8 @@ template<typename T>
 class kb_spline : public cubic_hermite_spline<kb_data_set<T>>
 {
 public:
-    kb_spline(kb_data_set<T> const data)
-    :   cubic_hermite_spline<kb_data_set<T>>(data)
+    kb_spline()
+    :   cubic_hermite_spline<kb_data_set<T>>()
     {
     }
 };
