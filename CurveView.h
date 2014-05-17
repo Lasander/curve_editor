@@ -37,6 +37,9 @@ public:
     CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent);
     ~CurveView();
 
+    /** @return current effective snap grid. Affected also by whether snapping is enabled.*/
+    QRectF getSnapGrid() const;
+
 signals:
     /**
      * @brief Curve snap grid has changed

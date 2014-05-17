@@ -42,13 +42,18 @@ CurveView::~CurveView()
 {
 }
 
+QRectF CurveView::getSnapGrid() const
+{
+    return m_snapToGrid ? m_snapGridRect : QRectF();
+}
+
 void CurveView::setSnapGrid(QRectF gridRect)
 {
     if (m_snapGridRect != gridRect)
     {
         m_snapGridRect = gridRect;
         if (m_snapToGrid)
-            emit snapGridChanged(m_snapGridRect);
+            emit snapGridChanged(getSnapGrid());
     }
 }
 
@@ -57,7 +62,7 @@ void CurveView::setSnapToGrid(bool snapToGrid)
     if (m_snapToGrid != snapToGrid)
     {
         m_snapToGrid = snapToGrid;
-        emit snapGridChanged(m_snapToGrid ? m_snapGridRect : QRectF());
+        emit snapGridChanged(getSnapGrid());
     }
 }
 
@@ -127,7 +132,7 @@ void CurveView::pointAdded(PointId id)
     connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
     connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
     connect(this, &CurveView::snapGridChanged, pointView, &PointView::setSnapGrid);
-    pointView->setSnapGrid(m_snapGridRect);
+    pointView->setSnapGrid(getSnapGrid());
 
     bool addOk = addToSpline(id);
     assert(addOk);
