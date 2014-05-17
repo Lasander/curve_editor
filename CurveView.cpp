@@ -1,11 +1,3 @@
-//
-//  CurveView.cpp
-//  CurveEditor
-//
-//  Created by Lasse Lopperi on 28.12.13.
-//
-//
-
 #include "CurveView.h"
 #include "PointView.h"
 #include <QGraphicsPathItem>
@@ -14,27 +6,13 @@
 #include <assert.h>
 
 CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
-:   TransformationNode(parent),
-    m_model(model),
-    m_snapGridRect(QRectF()),
-    m_snapToGrid(false),
-    m_highlightCurve(false)
+:   CurveViewAbs(model, parent),
+    m_model(model)
 {
     m_spline = new Spline;
     m_curveView = new QGraphicsPathItem(this);
     
-    connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::valueRangeChanged);
-
-    m_highlightCurve = m_model->isSelected();
-    connect(m_model.get(), &CurveModel::selectedChanged, this, &CurveView::highlightCurve);
-    
-    connect(m_model.get(), &CurveModel::pointAdded, this, &CurveView::pointAdded);
-    connect(m_model.get(), &CurveModel::pointUpdated, this, &CurveView::pointUpdated);
-    connect(m_model.get(), &CurveModel::pointRemoved, this, &CurveView::pointRemoved);
-    
-    for (auto pid : m_model->pointIds())
-    	pointAdded(pid);
-
+    connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::changeValueRange);
     updateTransformation();
 }
 
@@ -42,147 +20,49 @@ CurveView::~CurveView()
 {
 }
 
-QRectF CurveView::getSnapGrid() const
+CurveView* CurveView::create(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 {
-    return m_snapToGrid ? m_snapGridRect : QRectF();
+    CurveView* curveView = new CurveView(model, parent);
+    curveView->init();
+    return curveView;
 }
 
-void CurveView::setSnapGrid(QRectF gridRect)
+std::pair<float, QVariant> CurveView::placeNewPoint(PointId id, PointId nextId) const
 {
-    if (m_snapGridRect != gridRect)
+    const Point point = m_model->point(id);
+
+    if (nextId.isValid())
     {
-        m_snapGridRect = gridRect;
-        if (m_snapToGrid)
-            emit snapGridChanged(getSnapGrid());
+        const Point nextPoint = m_model->point(nextId);
+        float insertTime = (point.time() + nextPoint.time()) / 2.0f;
+        float insertValue = m_spline->value_at(insertTime);
+        return std::make_pair(insertTime, QVariant(insertValue));
     }
+
+    // No next point, add point to +1 second from the original point with the same value(s)
+    return std::make_pair(point.time() + 1.0, point.value());
 }
 
-void CurveView::setSnapToGrid(bool snapToGrid)
+bool CurveView::internalAddPoint(PointId id)
 {
-    if (m_snapToGrid != snapToGrid)
-    {
-        m_snapToGrid = snapToGrid;
-        emit snapGridChanged(getSnapGrid());
-    }
+    return addToSpline(id);
 }
 
-void CurveView::duplicateSelectedPoints()
+bool CurveView::internalUpdatePoint(PointId id)
 {
-    qDebug() << "CurveView::duplicateSelectedPoints";
-
-    QSet<PointId> toBeDuplicated;
-
-    for (auto &point : m_pointViews)
-        if (point->isSelected())
-            toBeDuplicated.insert(point->pointId());
-
-    for (auto pid : toBeDuplicated)
-    {
-        const Point point = m_model->point(pid);
-
-        const PointId nextPointId = m_model->nextPointId(pid);
-        if (nextPointId.isValid())
-        {
-            // Add point to between this and the next point matching the curve value at that point
-            const Point nextPoint = m_model->point(nextPointId);
-            float insertTime = (point.time() + nextPoint.time()) / 2.0f;
-            float insertValue = m_spline->value_at(insertTime);
-            m_model->addPoint(insertTime, insertValue);
-        }
-        else
-        {
-            // Add point to +1 second from the original point with the same value(s)
-            m_model->addPoint(point.time() + 1.0, point.value());
-        }
-    }
+    const bool removeOk = removeFromSpline(id);
+    const bool addOk = addToSpline(id);
+    return removeOk && addOk;
 }
 
-void CurveView::removeSelectedPoints()
+bool CurveView::internalRemovePoint(PointId id)
 {
-    QSet<PointId> toBeRemoved;
-
-    for (auto &point : m_pointViews)
-        if (point->isSelected())
-            toBeRemoved.insert(point->pointId());
-
-    for (auto pid : toBeRemoved)
-        m_model->removePoint(pid);
+    return removeFromSpline(id);
 }
 
-void CurveView::highlightCurve(bool highlight)
-{
-    if (m_highlightCurve != highlight)
-    {
-        m_highlightCurve = highlight;
-        updateCurves();
-    }
-}
-
-
-void CurveView::pointAdded(PointId id)
-{
-    qDebug() << "CurveView::pointAdded" << id;
-    assert(m_model);
-    
-    assert(id.isValid());
-    assert(!findPointView(id));
-
-    PointView* pointView = new PointView(m_model->point(id), this);
-    m_pointViews.insert(id, pointView);
-    connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
-    connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
-    connect(this, &CurveView::snapGridChanged, pointView, &PointView::setSnapGrid);
-    pointView->setSnapGrid(getSnapGrid());
-
-    bool addOk = addToSpline(id);
-    assert(addOk);
-    
-    updateCurves();
-}
-
-void CurveView::pointUpdated(PointId id)
-{
-    qDebug() << "CurveView::pointUpdated" << id;
-    assert(id.isValid());
-
-    PointView* pointView = findPointView(id);
-    assert(pointView);
-    pointView->setPoint(m_model->point(id));
-
-    bool removeOk = removeFromSpline(id);
-    assert(removeOk);
-    
-    bool addOk = addToSpline(id);
-    assert(addOk);
-    
-    updateCurves();
-}
-
-void CurveView::pointRemoved(PointId id)
-{
-    qDebug() << "CurveView::pointRemoved" << id;
-    
-    PointView* pointView = findPointView(id);
-    assert(pointView);
-    delete pointView;
-
-    int numberOfRemoved = m_pointViews.remove(id);
-    assert(numberOfRemoved == 1);
-
-    bool removeOk = removeFromSpline(id);
-    assert(removeOk);
-    
-  	updateCurves();
-}
-
-void CurveView::valueRangeChanged(RangeF /*valueRange*/)
+void CurveView::changeValueRange(RangeF /*valueRange*/)
 {
     updateTransformation();
-}
-
-PointView* CurveView::findPointView(PointId id) const
-{
-    return m_pointViews.value(id, nullptr);
 }
 
 void CurveView::updateCurves()
@@ -191,7 +71,7 @@ void CurveView::updateCurves()
 
     QPen curvePen(Qt::blue);
     curvePen.setCosmetic(true);
-    if (m_highlightCurve)
+    if (isHighlighted())
     {
         // Highlight curve by boosting width and darkening color
         curvePen.setWidth(curvePen.width() + 1);

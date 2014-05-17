@@ -7,7 +7,7 @@
 #include <QMultiMap>
 #include <QVariant>
 
-/** Common implementation for CurveModels. Not meant to be used as an interface. */
+/** Common implementation for curve models. */
 class CurveModelAbs : public QObject
 {
     Q_OBJECT

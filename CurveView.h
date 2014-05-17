@@ -1,92 +1,52 @@
-//
-//  CurveView.h
-//  CurveEditor
-//
-//  Created by Lasse Lopperi on 28.12.13.
-//
-//
+#ifndef CURVEVIEW_H
+#define CURVEVIEW_H
 
-#ifndef __CurveEditor__CurveView__
-#define __CurveEditor__CurveView__
-
-#include "TransformationNode.h"
 #include "CurveModel.h"
-#include <QObject>
+#include "CurveViewAbs.h"
 #include "pt/math/kb_spline.h"
+#include <QObject>
 #include <memory>
 
-class PointView;
-
 /**
- * View for potentially multi-dimensional curve.
+ * A spline view for a curve model.
  * Time axis (x) is unscaled in this view.
  * Valu axis (y) is scaled so the model value range [min, max] maps to range [0, 1].
  */
-class CurveView :
-	public QObject,
-	private TransformationNode
+class CurveView : public CurveViewAbs
 {
     Q_OBJECT
-    
-public:
+
+private:
     /**
-     * @brief Construct CurveView
+     * @brief Private constructor for CurveView. Private to force two-phase initialization done by static create method.
      * @param model Curve model
      * @param parent Parent item
      */
     CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent);
+    
+public:
     ~CurveView();
 
-    /** @return current effective snap grid. Affected also by whether snapping is enabled.*/
-    QRectF getSnapGrid() const;
-
-signals:
     /**
-     * @brief Curve snap grid has changed
-     * @param gridRect New snap grid
+     * @see CurveView::CurveView
+     * @return new CurveView
      */
-    void snapGridChanged(QRectF gridRect);
-    
-public slots:
-    /**
-     * @brief Set curve snap grid
-     * @param gridRect New snap grid
-     */
-    void setSnapGrid(QRectF gridRect);
-
-    /**
-     * @brief Set snap-to-grid
-     * @param snapToGrid True if curve should snap to define snap grid.
-     */
-    void setSnapToGrid(bool snapToGrid);
-
-    /** @brief Add new points corresponding to all selected points in the curve. */
-    void duplicateSelectedPoints();
-
-    /** @brief Remove all selected points in the curve. */
-    void removeSelectedPoints();
-
-    /**
-     * @brief Change curve highlighting
-     * @param highlight True for highlight
-     */
-    void highlightCurve(bool highlight);
+    static CurveView* create(std::shared_ptr<CurveModel> model, QGraphicsItem* parent);
 
 private slots:
-    void pointAdded(PointId id);
-    void pointUpdated(PointId id);
-    void pointRemoved(PointId id);
+    void changeValueRange(RangeF valueRange);
 
-    void valueRangeChanged(RangeF valueRange);
+    virtual bool internalAddPoint(PointId id) override;
+    virtual bool internalUpdatePoint(PointId id) override;
+    virtual bool internalRemovePoint(PointId id) override;
 
 private:
-    PointView* findPointView(PointId id) const;
-    void updateCurves();
+    virtual std::pair<float, QVariant> placeNewPoint(PointId id, PointId nextId) const override;
+
+    virtual void updateCurves() override;
     void updateTransformation();
 
-    // Points, for each dimension there is a separate PointView.
     std::shared_ptr<CurveModel> m_model;
-    QMultiMap<PointId, PointView*> m_pointViews;
     
     // Spline
     using Spline = pt::math::kb_spline<float>;
@@ -98,12 +58,7 @@ private:
     
     Spline* m_spline;
     QGraphicsPathItem* m_curveView;
-
-    QRectF m_snapGridRect;
-    bool m_snapToGrid;
-
-    bool m_highlightCurve;
 };
 
 
-#endif /* defined(__CurveEditor__CurveView__) */
+#endif /* CURVEVIEW_H */

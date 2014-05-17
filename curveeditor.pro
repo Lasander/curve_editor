@@ -40,7 +40,8 @@ SOURCES += \
     EditorGraphicsView.cpp \
     CurveModelAbs.cpp \
     PointId.cpp \
-    Point.cpp
+    Point.cpp \
+    CurveViewAbs.cpp
 
 HEADERS  += \
     CurveModel.h \
@@ -67,4 +68,5 @@ HEADERS  += \
     BeatLinesView.h \
     EditorGraphicsView.h \
     CurveModelAbs.h \
-    Point.h
+    Point.h \
+    CurveViewAbs.h

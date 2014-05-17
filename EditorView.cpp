@@ -66,7 +66,7 @@ void EditorView::curveAdded(std::shared_ptr<CurveModel> curve)
     assert(existing == m_curveViews.end());
     
     // Create new curve view
-    CurveView* curveView = new CurveView(curve, m_view->sceneLayer());
+    CurveView* curveView = CurveView::create(curve, m_view->sceneLayer());
 
     // Setup snap grid synching to beat lines
     connect(m_snapToGrid, SIGNAL(toggled(bool)), curveView, SLOT(setSnapToGrid(bool)));
