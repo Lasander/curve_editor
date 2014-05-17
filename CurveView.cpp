@@ -69,17 +69,17 @@ void CurveView::duplicateSelectedPoints()
 
     for (auto &point : m_pointViews)
         if (point->isSelected())
-            toBeDuplicated.insert(point->point().id());
+            toBeDuplicated.insert(point->pointId());
 
     for (auto pid : toBeDuplicated)
     {
-        const CurveModel::Point point = m_model->point(pid);
+        const Point point = m_model->point(pid);
 
         const PointId nextPointId = m_model->nextPointId(pid);
         if (nextPointId.isValid())
         {
             // Add point to between this and the next point matching the curve value at that point
-            const CurveModel::Point nextPoint = m_model->point(nextPointId);
+            const Point nextPoint = m_model->point(nextPointId);
             float insertTime = (point.time() + nextPoint.time()) / 2.0f;
             float insertValue = m_spline->value_at(insertTime);
             m_model->addPoint(insertTime, insertValue);
@@ -98,7 +98,7 @@ void CurveView::removeSelectedPoints()
 
     for (auto &point : m_pointViews)
         if (point->isSelected())
-            toBeRemoved.insert(point->point().id());
+            toBeRemoved.insert(point->pointId());
 
     for (auto pid : toBeRemoved)
         m_model->removePoint(pid);
@@ -119,18 +119,17 @@ void CurveView::pointAdded(PointId id)
     qDebug() << "CurveView::pointAdded" << id;
     assert(m_model);
     
-    const CurveModel::Point point = m_model->point(id);
-    assert(point.isValid());
+    assert(id.isValid());
     assert(!findPointView(id));
 
-    PointView* pointView = new PointView(point, this);
+    PointView* pointView = new PointView(m_model->point(id), this);
     m_pointViews.insert(id, pointView);
     connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
     connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
     connect(this, &CurveView::snapGridChanged, pointView, &PointView::setSnapGrid);
     pointView->setSnapGrid(m_snapGridRect);
 
-    bool addOk = addToSpline(point);
+    bool addOk = addToSpline(id);
     assert(addOk);
     
     updateCurves();
@@ -139,19 +138,16 @@ void CurveView::pointAdded(PointId id)
 void CurveView::pointUpdated(PointId id)
 {
     qDebug() << "CurveView::pointUpdated" << id;
-    
+    assert(id.isValid());
+
     PointView* pointView = findPointView(id);
     assert(pointView);
-    const CurveModel::Point old(pointView->point());
+    pointView->setPoint(m_model->point(id));
 
-    const CurveModel::Point p = m_model->point(id);
-    assert(p.isValid());
-    pointView->setPoint(p);
-
-	bool removeOk = removeFromSpline(old);
+    bool removeOk = removeFromSpline(id);
     assert(removeOk);
     
-    bool addOk = addToSpline(p);
+    bool addOk = addToSpline(id);
     assert(addOk);
     
     updateCurves();
@@ -163,14 +159,12 @@ void CurveView::pointRemoved(PointId id)
     
     PointView* pointView = findPointView(id);
     assert(pointView);
-    const CurveModel::Point removed(pointView->point());
+    delete pointView;
 
     int numberOfRemoved = m_pointViews.remove(id);
     assert(numberOfRemoved == 1);
 
-    delete pointView;
-    
-	bool removeOk = removeFromSpline(removed);
+    bool removeOk = removeFromSpline(id);
     assert(removeOk);
     
   	updateCurves();
@@ -248,14 +242,16 @@ void CurveView::updateCurves()
     m_curveView->setPath(path);
 }
 
-bool CurveView::addToSpline(CurveModel::Point const& point)
+bool CurveView::addToSpline(PointId id)
 {
-    if (!point.isValid())
+    if (!id.isValid())
         return false;
-    
-    pt::math::kochanek_bartels_parameters params(point.tension(), point.bias(), point.continuity());
 
-    pt::math::kb_data_set<float>::point p(point.id(), point.time(), point.value(), params);
+    const Point point = m_model->point(id);
+    const CurveModel::KbParams params = m_model->params(id);
+
+    const pt::math::kochanek_bartels_parameters kb_params(params.tension(), params.bias(), params.continuity());
+    pt::math::kb_data_set<float>::point p(id, point.time(), point.value().toFloat(), kb_params);
     auto point_iter = m_spline->data().add(p);
     if (point_iter == m_spline->data().end())
         return false;
@@ -263,12 +259,12 @@ bool CurveView::addToSpline(CurveModel::Point const& point)
     return true;
 }
 
-bool CurveView::removeFromSpline(CurveModel::Point const& point)
+bool CurveView::removeFromSpline(PointId id)
 {
-    if (!point.isValid())
+    if (!id.isValid())
         return false;
     
-    auto point_iter = findSplinePoint(point);
+    auto point_iter = findSplinePoint(id);
     if (point_iter == m_spline->data().end())
         return false;
 
@@ -276,9 +272,9 @@ bool CurveView::removeFromSpline(CurveModel::Point const& point)
     return true;
 }
 
-CurveView::SplineDataSet::iterator CurveView::findSplinePoint(CurveModel::Point const& point) const
+CurveView::SplineDataSet::iterator CurveView::findSplinePoint(PointId id) const
 {
-    return m_spline->data().get_point(point.id());
+    return m_spline->data().get_point(id);
 }
 
 void CurveView::updateTransformation()

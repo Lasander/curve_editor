@@ -89,9 +89,9 @@ private:
     using Spline = pt::math::kb_spline<float>;
 	using SplineDataSet = pt::math::kb_data_set<float>;
     
-    bool addToSpline(CurveModel::Point const& point);
-    bool removeFromSpline(CurveModel::Point const& point);
-    SplineDataSet::iterator findSplinePoint(CurveModel::Point const& point) const;
+    bool addToSpline(PointId id);
+    bool removeFromSpline(PointId id);
+    SplineDataSet::iterator findSplinePoint(PointId id) const;
     
     Spline* m_spline;
     QGraphicsPathItem* m_curveView;

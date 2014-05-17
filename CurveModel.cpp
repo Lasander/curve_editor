@@ -10,44 +10,6 @@
 #include <assert.h>
 #include <utility>
 
-CurveModel::Point::Point()
-:	m_isValid(false), m_isSelected(false), m_id(PointId::invalidId()), m_time(0), m_value(0),
-	m_tension(0), m_bias(0), m_continuity(0)
-{
-}
-
-CurveModel::Point::Point(float time, float value, bool isSelected, PointId id)
-:	m_isValid(true), m_isSelected(isSelected), m_id(id.isValid() ? id : PointId::generateId()), m_time(time), m_value(value),
-	m_tension(0), m_bias(0), m_continuity(0)
-{
-}
-
-CurveModel::Point::Point(float time, float value, float tension, float bias, float continuity, bool isSelected, PointId id)
-:	m_isValid(true), m_isSelected(isSelected), m_id(id.isValid() ? id : PointId::generateId()), m_time(time), m_value(value),
-	m_tension(tension), m_bias(bias), m_continuity(continuity)
-{
-}
-
-void CurveModel::Point::updateParams(float tension, float bias, float continuity)
-{
-	m_tension = tension;
-	m_bias = bias;
-	m_continuity = continuity;
-}
-
-bool CurveModel::Point::isSelected() const
-{
-    return m_isSelected;
-}
-
-void CurveModel::Point::setSelected(bool isSelected)
-{
-    m_isSelected = isSelected;
-}
-
-/////////////////////////////////////////
-/////////////////////////////////////////
-
 CurveModel::CurveModel(const QString& name)
 :	CurveModelAbs(name),
     m_valueRange(-100, 100)
@@ -70,7 +32,7 @@ QList<PointId> CurveModel::pointIds() const
 
 PointId CurveModel::nextPointId(PointId id) const
 {
-    ConstIterator it = findPoint(id);
+    PointContainer::ConstIterator it = findPoint(id);
     if (it == m_points.end())
     {
         qWarning() << "Trying to get for unknown point id:" << id;
@@ -88,12 +50,21 @@ PointId CurveModel::nextPointId(PointId id) const
     return it->id();
 }
 
-const CurveModel::Point CurveModel::point(PointId id) const
+const Point CurveModel::point(PointId id) const
 {
-    ConstIterator it = findPoint(id);
+    PointContainer::ConstIterator it = findPoint(id);
     if (it == m_points.end())
         return Point();
     
+    return *it;
+}
+
+const CurveModel::KbParams CurveModel::params(PointId id) const
+{
+    ParamContainer::ConstIterator it = m_params.find(id);
+    if (it == m_params.end())
+        return KbParams();
+
     return *it;
 }
 
@@ -102,42 +73,47 @@ int CurveModel::numberOfPoints() const
     return m_points.size();
 }
 
-void CurveModel::addPoint(float time, float value)
+void CurveModel::addPoint(float time, QVariant value)
 {
-    addPoint(time, value, 0, 0, 0);
-}
+    // Add to point container
+    const QVariant limitedValue = limitValueToScale(value);
+    Point p(time, limitedValue, false);
+    PointContainer::Iterator pointIt = m_points.insert(time, p);
+    if (pointIt == m_points.end())
+        return;
 
-void CurveModel::addPoint(float time, float value, float tension, float bias, float continuity)
-{
-    time = limitTimeToRange(time);
-    value = limitValueToScale(value);
+    // Add to param container
+    ParamContainer::Iterator paramIt = m_params.insert(p.id(), KbParams());
+    if (paramIt == m_params.end())
+    {
+        m_points.erase(pointIt);
+        return;
+    }
 
-    Point p(time, value, tension, bias, continuity, false);
-    m_points.insert(time, p);
-    
     emit pointAdded(p.id());
 }
 
-void CurveModel::updatePoint(PointId id, float time, float value)
+void CurveModel::updatePoint(PointId id, float time, QVariant value)
 {
-    Iterator it = findPoint(id);
+    PointContainer::Iterator it = findPoint(id);
     if (it == m_points.end())
     {
         qWarning() << "Unknown point" << id;
         return;
     }
-    
+
     time = limitTimeToRange(time);
     value = limitValueToScale(value);
-    
+
     const Point old = *it;
-    Point p(time, value, old.tension(), old.bias(), old.continuity(), old.isSelected(), old.id());
+    Point p(time, value, old.isSelected(), old.id());
     if (p == old)
         return; // No change
-    
+
+    // Remove/add to sort automatically
     m_points.erase(it);
     m_points.insert(time, p);
-    
+
     emit pointUpdated(id);
 }
 
@@ -145,23 +121,24 @@ void CurveModel::updatePointParams(PointId id, float tension, float bias, float 
 {
     qDebug() << "updatePointParams" << id << tension << bias << continuity;
 
-    Iterator it = findPoint(id);
-    if (it == m_points.end())
+    ParamContainer::Iterator it = m_params.find(id);
+    if (it == m_params.end())
         return;
     
-    Point p(it->time(), it->value(), tension, bias, continuity, it->isSelected(), it->id());
-    if (p == *it)
-        return; // No change
-    
-    it->updateParams(tension, bias, continuity);
-    emit pointUpdated(id);
+    const KbParams p(tension, bias, continuity);
+    if (p != *it)
+    {
+        // Params changed
+        (*it) = p;
+        emit pointUpdated(id);
+    }
 }
 
 void CurveModel::pointSelectedChanged(PointId id, bool isSelected)
 {
     qDebug() << "Point:" << id << ":" <<  (isSelected ? "selected" : "deselected");
 
-    Iterator it = findPoint(id);
+    PointContainer::Iterator it = findPoint(id);
     if (it == m_points.end())
     {
         qWarning() << "Unknown point selected changed" << id;
@@ -184,7 +161,7 @@ void CurveModel::pointSelectedChanged(PointId id, bool isSelected)
 
 void CurveModel::removePoint(PointId id)
 {
-    Iterator it = findPoint(id);
+    PointContainer::Iterator it = findPoint(id);
     if (it == m_points.end())
     {
         qWarning() << "Unknown point" << id;
@@ -196,7 +173,9 @@ void CurveModel::removePoint(PointId id)
         emit pointDeselected(id);
 
     m_points.erase(it);
-    
+    int removedParams = m_params.remove(id);
+    assert(removedParams == 1);
+
     emit pointRemoved(id);
 }
 
@@ -205,7 +184,7 @@ void CurveModel::forcePointsToTimeRange(RangeF newRange)
     // Ensure all points fit to the new time range
     for (auto pid : pointIds())
     {
-        Iterator it = findPoint(pid);
+        PointContainer::Iterator it = findPoint(pid);
         if (it->time() < newRange.min || it->time() > newRange.max)
             updatePoint(pid, it->time(), it->value()); // updatePoint will do necessary clamping
     }
@@ -220,7 +199,7 @@ void CurveModel::setValueRange(RangeF newRange)
         // Ensure all points fit to the new value range
         for (auto pid : pointIds())
         {
-            Iterator it = findPoint(pid);
+            PointContainer::Iterator it = findPoint(pid);
             if (it->value() < m_valueRange.min || it->value() > m_valueRange.max)
             {
                 updatePoint(pid, it->time(), it->value()); // updatePoint will do necessary clamping
@@ -236,9 +215,9 @@ RangeF CurveModel::valueRange() const
     return m_valueRange;
 }
 
-CurveModel::Iterator CurveModel::findPoint(PointId id)
+CurveModel::PointContainer::Iterator CurveModel::findPoint(PointId id)
 {
-    Iterator it = m_points.begin();
+    PointContainer::Iterator it = m_points.begin();
     for (; it != m_points.end(); ++it)
     {
         if ((*it).id() == id)
@@ -247,9 +226,9 @@ CurveModel::Iterator CurveModel::findPoint(PointId id)
     return it;
 }
 
-CurveModel::ConstIterator CurveModel::findPoint(PointId id) const
+CurveModel::PointContainer::ConstIterator CurveModel::findPoint(PointId id) const
 {
-    ConstIterator it = m_points.begin();
+    PointContainer::ConstIterator it = m_points.begin();
     for (; it != m_points.end(); ++it)
     {
         if ((*it).id() == id)
@@ -263,7 +242,8 @@ float CurveModel::limitTimeToRange(float time) const
     return timeRange().clampToRange(time);
 }
 
-float CurveModel::limitValueToScale(float value) const
+
+QVariant CurveModel::limitValueToScale(const QVariant& value) const
 {
-    return m_valueRange.clampToRange(value);
+    return m_valueRange.clampToRange(value.toFloat());
 }

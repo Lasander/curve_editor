@@ -109,11 +109,11 @@ bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
 
     for (auto id : curve->pointIds())
     {
-        const CurveModel::Point p = curve->point(id);
+        const Point p = curve->point(id);
 
         stream.writeEmptyElement("key");
         stream.writeAttribute("time", QString("%1").arg(p.time()));
-        stream.writeAttribute("value", QString("%1").arg(p.value()));
+        stream.writeAttribute("value", QString("%1").arg(p.value().toFloat()));
     }
 
     stream.writeEndElement();

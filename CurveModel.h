@@ -16,6 +16,99 @@
 #include <QMultiMap>
 #include <QDebug>
 
+class CurveModel;
+
+/**
+ * @brief A single control point within the curve.
+ *
+ * Points are created, owned and controlled by a CurveModel instance.
+ * Others can refer to the point using its id.
+ */
+class Point
+{
+public:
+    /** @return Point time */
+    float time() const;
+    /** @return Point value */
+    QVariant value() const;
+
+    /** @return True if point is valid */
+    bool isValid() const;
+    /** @return Point id */
+    PointId id() const;
+
+    /** @return True if point is selected */
+    bool isSelected() const;
+
+private:
+    /** For now allow only CurveModel to create/modify */
+    friend class CurveModel;
+
+    /** @brief Construct invalid point */
+    Point();
+
+    /** @brief Construct valid point, optionally with an existing id */
+    Point(float time, QVariant value, bool isSelected, PointId id = PointId::invalidId());
+
+    /**
+     * @brief Set point selected state.
+     * @param isSelected True for selected.
+     */
+    void setSelected(bool isSelected);
+
+    /** Compare two points */
+    bool operator==(const Point& other) const;
+
+private:
+    bool m_isValid;
+    bool m_isSelected;
+    PointId m_id;
+    float m_time;
+    QVariant m_value;
+};
+
+inline Point::Point()
+:	m_isValid(false), m_isSelected(false), m_id(PointId::invalidId()), m_time(0), m_value()
+{
+}
+inline Point::Point(float time, QVariant value, bool isSelected, PointId id)
+:	m_isValid(true), m_isSelected(isSelected), m_id(id.isValid() ? id : PointId::generateId()), m_time(time), m_value(value)
+{
+}
+inline float Point::time() const
+{
+    return m_time;
+}
+inline QVariant Point::value() const
+{
+    return m_value;
+}
+inline bool Point::isValid() const
+{
+    return m_isValid;
+}
+inline PointId Point::id() const
+{
+    return m_id;
+}
+inline bool Point::isSelected() const
+{
+    return m_isSelected;
+}
+inline void Point::setSelected(bool isSelected)
+{
+    m_isSelected = isSelected;
+}
+inline bool Point::operator==(const Point& other) const
+{
+    return
+        (m_isValid == other.m_isValid) &&
+        (m_isSelected == other.m_isSelected) &&
+        (m_id == other.m_id) &&
+        (m_time == other.m_time) &&
+        (m_value == other.m_value);
+}
+
 /**
  * CurveModel represents a curve as its control points.
  * Derived from QObject for signals and slots.
@@ -25,55 +118,33 @@ class CurveModel : public CurveModelAbs
     Q_OBJECT
     
 public:
-    /**
-     * @brief A single control point within the curve.
-     *
-     * Points are created, owned and controlled by a CurveModel instance.
-     * Others can refer to the point using its id.
-     */
-    class Point
+    /** Kochanek-Bartels parameters for a single curve point */
+    class KbParams
     {
     public:
-        float time() const;
-        float value() const;
-        
+        /** @return tension parameter */
         float tension() const;
+        /** @return bias parameter */
         float bias() const;
+        /** @return continuity parameter */
         float continuity() const;
 
-        bool isValid() const;
-        PointId id() const;
-        
-	private:
-        /** @brief Construct invalid point */
-        Point();
-
-        /** @brief Construct valid point, optionally with an existing id */
-        Point(float time, float value, bool isSelected, PointId id = PointId::invalidId());
-        Point(float time, float value, float tension, float bias, float continuity, bool isSelected, PointId id = PointId::invalidId());
-        void updateParams(float tension, float bias, float continuity);
-
-        bool operator==(Point const& other) const;
-        bool operator!=(Point const& other) const;
-
-        bool isSelected() const;
-        void setSelected(bool isSelected);
-        
-        // Allow curve to create points
-        friend class CurveModel;
-        
     private:
-        bool m_isValid;
-        bool m_isSelected;
-        PointId m_id;
-        float m_time;
-        float m_value;
-        
+        KbParams(float tension = 0.0f, float bias = 0.0f, float continuity = 0.0f);
+        void update(float tension, float bias, float continuity);
+
+        bool operator==(KbParams const& other) const;
+        bool operator!=(KbParams const& other) const;
+
+        // Allow curve to create parameters
+        friend class CurveModel;
+
+    private:
         float m_tension;
         float m_bias;
         float m_continuity;
     };
-    
+
 public:
     /**
      * @brief Construct a CurveModel
@@ -99,6 +170,12 @@ public:
      */
     const Point point(PointId id) const;
 
+    /**
+     * @return Copy of a point params with the given id. In case an invalid or
+     * non-existent id is given default params are returned.
+     */
+    const KbParams params(PointId id) const;
+
     /** @return The number of point in the curve. */
     int numberOfPoints() const;
 
@@ -117,18 +194,7 @@ public slots:
      * @param value Point value
      * @par Tension, bias and continuity parameters default to 0.
      */
-    void addPoint(float time, float value);
-    /**
-     * @brief Add new point with given attributes.
-     *
-     * @param time Point time
-     * @param value Point value
-     * @param tension Tension parameter at the point
-     * @param bias Bias parameter at the point
-     * @param continuity Continuity parameter at the point
-     */
-    void addPoint(float time, float value, float tension, float bias, float continuity);
-
+    void addPoint(float time, QVariant value);
     /**
      * @brief Update point time and/or value for one dimension of an existing point.
      *
@@ -138,7 +204,7 @@ public slots:
      *
      * @par No modifications are made if the id is invalid
      */
-    void updatePoint(PointId id, float time, float value);
+    void updatePoint(PointId id, float time, QVariant value);
     /**
      * @brief Update parameters for an existing point
      *
@@ -174,64 +240,52 @@ public slots:
 
 private:
     using PointContainer = QMultiMap<float, Point>;
-    using Iterator = PointContainer::Iterator;
-    using ConstIterator = PointContainer::ConstIterator;
+    using ParamContainer = QMap<PointId, KbParams>;
 
     virtual void forcePointsToTimeRange(RangeF newRange);
     
-    Iterator findPoint(PointId id);
-    ConstIterator findPoint(PointId id) const;
+    PointContainer::Iterator findPoint(PointId id);
+    PointContainer::ConstIterator findPoint(PointId id) const;
     float limitTimeToRange(float time) const;
-    float limitValueToScale(float value) const;
-    
+    QVariant limitValueToScale(const QVariant& value) const;
+
     PointContainer m_points;
+    ParamContainer m_params;
     RangeF m_valueRange;
 };
 
-inline float CurveModel::Point::time() const
+inline CurveModel::KbParams::KbParams(float tension, float bias, float continuity)
+  : m_tension(tension), m_bias(bias), m_continuity(continuity)
 {
-    return m_time;
 }
-inline float CurveModel::Point::value() const
-{
-    return m_value;
-}
-inline float CurveModel::Point::tension() const
+inline float CurveModel::KbParams::tension() const
 {
     return m_tension;
 }
-inline float CurveModel::Point::bias() const
+inline float CurveModel::KbParams::bias() const
 {
     return m_bias;
 }
-inline float CurveModel::Point::continuity() const
+inline float CurveModel::KbParams::continuity() const
 {
     return m_continuity;
 }
-inline bool CurveModel::Point::isValid() const
+inline void CurveModel::KbParams::update(float tension, float bias, float continuity)
 {
-    return m_isValid;
+    m_tension = tension;
+    m_bias = bias;
+    m_continuity = continuity;
 }
-inline PointId CurveModel::Point::id() const
-{
-    return m_id;
-}
-inline bool CurveModel::Point::operator==(Point const& other) const
+inline bool CurveModel::KbParams::operator==(KbParams const& other) const
 {
     return
-    (other.isValid() == isValid()) &&
-    (other.id() == id()) &&
-    (other.time() == time()) &&
-    (other.value() == value()) &&
-    (other.tension() == tension()) &&
-    (other.bias() == bias()) &&
-    (other.continuity() == continuity());
+        (m_tension == other.m_tension) &&
+        (m_bias == other.m_bias) &&
+        (m_continuity == other.m_continuity);
 }
-
-inline bool CurveModel::Point::operator!=(Point const& other) const
+inline bool CurveModel::KbParams::operator!=(KbParams const& other) const
 {
-    return !operator==(other);
+    return !((*this)==other);
 }
-
 
 #endif /* CURVEMODEL_H */

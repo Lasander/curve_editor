@@ -32,20 +32,20 @@ class PointView :
 public:
     /**
      * @brief Construct PointView
-     * @param pointModel Point model
+     * @param point Initial point
      * @param parent Parent Item
      */
-    PointView(CurveModel::Point const& pointModel, QGraphicsItem* parent);
+    PointView(Point const& point, QGraphicsItem* parent);
     ~PointView();
     
     /**
      * @brief Update point model
-     * @param pointModel New point model
+     * @param pointModel New point
      */
-    void setPoint(CurveModel::Point const& pointModel);
+    void setPoint(Point const& point);
 
-    /** @return Get current point model */
-    const CurveModel::Point point() const;
+    /** @return Get point id */
+    PointId pointId() const;
     
 public:
     /** Expose QGraphicsView::pos() */
@@ -60,7 +60,7 @@ signals:
      * @param time New point time
      * @param value New point value
      */
-    void pointPositionChanged(PointId id, float time, float value);
+    void pointPositionChanged(PointId id, float time, QVariant value);
 
     /**
      * @brief Point (view) selection state has changed
@@ -87,7 +87,7 @@ private: // Implementation for GraphicsItemDelegate
 private:
     QGraphicsItem* m_item;
     QGraphicsSimpleTextItem* m_text;
-    CurveModel::Point m_pointModel;
+    Point m_point;
     QPointF m_offset; //< Used to keep relative point grab position when dragging the point
     QRectF m_gridRect;
 };
