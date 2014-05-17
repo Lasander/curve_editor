@@ -42,7 +42,7 @@ public:
         float bias() const;
         float continuity() const;
 
-        bool is_valid() const;
+        bool isValid() const;
         PointId id() const;
         
 	private:
@@ -229,7 +229,7 @@ inline float CurveModel::Point::continuity() const
     return m_continuity;
 }
 
-inline bool CurveModel::Point::is_valid() const
+inline bool CurveModel::Point::isValid() const
 {
     return m_isValid;
 }
@@ -242,7 +242,7 @@ inline PointId CurveModel::Point::id() const
 inline bool CurveModel::Point::operator==(Point const& other) const
 {
     return
-    (other.is_valid() == is_valid()) &&
+    (other.isValid() == isValid()) &&
     (other.id() == id()) &&
     (other.time() == time()) &&
     (other.values() == values()) &&

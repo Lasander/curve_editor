@@ -24,7 +24,7 @@ PointView::PointView(CurveModel::Point const& pointModel, int index, QGraphicsIt
     m_index(index),
     m_gridRect(QRectF(0, 0, 2, 0))
 {
-    assert(m_pointModel.is_valid());
+    assert(m_pointModel.isValid());
     
     m_item = new PointItem(this, this);
     m_item->setAcceptedMouseButtons(Qt::LeftButton);

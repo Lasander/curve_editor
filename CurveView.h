@@ -63,7 +63,10 @@ public slots:
     /** @brief Remove all selected points in the curve. */
     void removeSelectedPoints();
 
-
+    /**
+     * @brief Change curve highlighting
+     * @param highlight True for highlight
+     */
     void highlightCurve(bool highlight);
 
 private slots:
@@ -72,11 +75,9 @@ private slots:
     void pointRemoved(PointId id);
 
     void valueRangeChanged(RangeF valueRange);
-    
-    void selectedChanged(bool status);
 
 private:
-    QList<PointView*> findPointView(PointId id);
+    QList<PointView*> findPointView(PointId id) const;
     void updateCurves();
     void updateTransformation();
 

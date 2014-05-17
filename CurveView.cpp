@@ -8,7 +8,6 @@
 
 #include "CurveView.h"
 #include "PointView.h"
-#include "ScaleView.h"
 #include <QGraphicsPathItem>
 #include <QDebug>
 #include <QPen>
@@ -134,7 +133,7 @@ void CurveView::pointAdded(PointId id)
     assert(m_model);
     
     const CurveModel::Point point = m_model->point(id);
-    assert(point.is_valid());
+    assert(point.isValid());
     assert(findPointView(id).isEmpty());
 
     for (int i = 0; i < m_model->dimension(); ++i)
@@ -162,7 +161,7 @@ void CurveView::pointUpdated(PointId id)
     const CurveModel::Point old(pointViews[0]->point());
     
     const CurveModel::Point p = m_model->point(id);
-    assert(p.is_valid());
+    assert(p.isValid());
 
     for (int i = 0; i < m_model->dimension(); ++i)
 	    pointViews[i]->setPoint(p);
@@ -201,12 +200,7 @@ void CurveView::valueRangeChanged(RangeF /*valueRange*/)
     updateTransformation();
 }
 
-void CurveView::selectedChanged(bool /*status*/)
-{
-    // TODO
-}
-
-QList<PointView*> CurveView::findPointView(PointId id)
+QList<PointView*> CurveView::findPointView(PointId id) const
 {
     return m_pointViews.values(id);
 }
@@ -278,7 +272,7 @@ void CurveView::updateCurves()
 
 bool CurveView::addToSpline(CurveModel::Point const& point)
 {
-    if (!point.is_valid())
+    if (!point.isValid())
         return false;
     
     pt::math::kochanek_bartels_parameters params(point.tension(), point.bias(), point.continuity());
@@ -296,7 +290,7 @@ bool CurveView::addToSpline(CurveModel::Point const& point)
 
 bool CurveView::removeFromSpline(CurveModel::Point const& point)
 {
-    if (!point.is_valid())
+    if (!point.isValid())
         return false;
     
 	for (int i = 0; i < m_model->dimension(); ++i)
