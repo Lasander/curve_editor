@@ -61,7 +61,7 @@ int PointId::getId() const
 
 QDebug operator<<(QDebug dbg, const PointId& id)
 {
-     dbg.nospace() << "PointId(" << id.m_id << ") ";
-     return dbg.maybeSpace();
+     dbg.nospace() << "PointId(" << id.m_id << ")";
+     return dbg.space();
  }
 
