@@ -21,7 +21,7 @@ class QGraphicsItem;
 class QGraphicsSimpleTextItem;
 QT_END_NAMESPACE
 
-/** View for a single dimension (value index) of a curve point. */
+/** View for a single curve point. */
 class PointView :
 	public QObject,
 	private TransformationNode,
@@ -33,10 +33,9 @@ public:
     /**
      * @brief Construct PointView
      * @param pointModel Point model
-     * @param index Value index
      * @param parent Parent Item
      */
-    PointView(CurveModel::Point const& pointModel, int index, QGraphicsItem* parent);
+    PointView(CurveModel::Point const& pointModel, QGraphicsItem* parent);
     ~PointView();
     
     /**
@@ -60,17 +59,15 @@ signals:
      * @param id Point id
      * @param time New point time
      * @param value New point value
-     * @param index Value index
      */
-    void pointPositionChanged(PointId id, float time, float value, int index);
+    void pointPositionChanged(PointId id, float time, float value);
 
     /**
      * @brief Point (view) selection state has changed
      * @param id Point id
-     * @param index Value index
      * @param isSelected True if the point index was selected, false if deselected.
      */
-    void pointSelectedChanged(PointId id, int index, bool isSelected);
+    void pointSelectedChanged(PointId id, bool isSelected);
 
 public slots:
     /**
@@ -91,7 +88,6 @@ private:
     QGraphicsItem* m_item;
     QGraphicsSimpleTextItem* m_text;
     CurveModel::Point m_pointModel;
-    int m_index;
     QPointF m_offset; //< Used to keep relative point grab position when dragging the point
     QRectF m_gridRect;
 };

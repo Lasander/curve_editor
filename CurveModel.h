@@ -6,8 +6,8 @@
 //
 //
 
-#ifndef __CurveEditor__CurveModel__
-#define __CurveEditor__CurveModel__
+#ifndef CURVEMODEL_H
+#define CURVEMODEL_H
 
 #include "PointId.h"
 #include "RangeF.h"
@@ -17,7 +17,7 @@
 #include <QDebug>
 
 /**
- * CurveModel represents a (potentially multi-dimensional) curve as its control points.
+ * CurveModel represents a curve as its control points.
  * Derived from QObject for signals and slots.
  */
 class CurveModel : public CurveModelAbs
@@ -35,8 +35,7 @@ public:
     {
     public:
         float time() const;
-        float value(int index) const;
-        QList<float> values() const;
+        float value() const;
         
         float tension() const;
         float bias() const;
@@ -50,26 +49,25 @@ public:
         Point();
 
         /** @brief Construct valid point, optionally with an existing id */
-        Point(float time, QList<float> values, QList<bool> isSelected, PointId id = PointId::invalidId());
-        Point(float time, QList<float> values, float tension, float bias, float continuity, QList<bool> isSelected, PointId id = PointId::invalidId());
+        Point(float time, float value, bool isSelected, PointId id = PointId::invalidId());
+        Point(float time, float value, float tension, float bias, float continuity, bool isSelected, PointId id = PointId::invalidId());
         void updateParams(float tension, float bias, float continuity);
 
         bool operator==(Point const& other) const;
         bool operator!=(Point const& other) const;
 
-        bool isAnySelected() const;
-        QList<bool> isSelected() const;
-        void setSelected(bool isSelected, int index);
+        bool isSelected() const;
+        void setSelected(bool isSelected);
         
         // Allow curve to create points
         friend class CurveModel;
         
     private:
         bool m_isValid;
-        QList<bool> m_isSelected;
+        bool m_isSelected;
         PointId m_id;
         float m_time;
-        QList<float> m_values;
+        float m_value;
         
         float m_tension;
         float m_bias;
@@ -79,10 +77,9 @@ public:
 public:
     /**
      * @brief Construct a CurveModel
-     * @param dimension Number of values per point
      * @param name Curve name
      */
-    CurveModel(int dimension, const QString& name);
+    CurveModel(const QString& name);
 
     ~CurveModel();
 
@@ -105,9 +102,6 @@ public:
     /** @return The number of point in the curve. */
     int numberOfPoints() const;
 
-    /** @return The number of values in each point. */
-    int dimension() const;
-
     /** @return Curve value range [min, max]. */
     RangeF valueRange() const;
 
@@ -120,24 +114,20 @@ public slots:
      * @brief Add new point with given attributes.
      *
      * @param time Point time
-     * @param values Array of values
-
+     * @param value Point value
      * @par Tension, bias and continuity parameters default to 0.
-     * @par No point is added if number of value doesn't match the curve dimension
      */
-    void addPoint(float time, QList<float> values);
+    void addPoint(float time, float value);
     /**
      * @brief Add new point with given attributes.
      *
      * @param time Point time
-     * @param values Array of values (number of value must match the curve dimension)
+     * @param value Point value
      * @param tension Tension parameter at the point
      * @param bias Bias parameter at the point
      * @param continuity Continuity parameter at the point
-     *
-     * @par No point is added if number of value doesn't match the curve dimension
      */
-    void addPoint(float time, QList<float> values, float tension, float bias, float continuity);
+    void addPoint(float time, float value, float tension, float bias, float continuity);
 
     /**
      * @brief Update point time and/or value for one dimension of an existing point.
@@ -145,12 +135,10 @@ public slots:
      * @param id Point id
      * @param time New time
      * @param value New value
-     * @param index The dimension index
      *
-     * @par Altering the time will naturally affect the whole point (also other value dimension)
-     * @par No modifications are made if the id is invalid or if the index is not a valid value dimension
+     * @par No modifications are made if the id is invalid
      */
-    void updatePoint(PointId id, float time, float value, int index);
+    void updatePoint(PointId id, float time, float value);
     /**
      * @brief Update parameters for an existing point
      *
@@ -164,12 +152,11 @@ public slots:
     void updatePointParams(PointId id, float tension, float bias, float continuity);
 
     /**
-     * @brief Point selected state changed. Can also be another index of already selected point being selected.
+     * @brief Point selected state changed.
      * @param id Point id
-     * @param index The dimension index
      * @param isSelected True if point is selected
      */
-    void pointSelectedChanged(PointId id, int index, bool isSelected);
+    void pointSelectedChanged(PointId id, bool isSelected);
 
     /**
      * @brief Remove a point.
@@ -196,10 +183,8 @@ private:
     ConstIterator findPoint(PointId id) const;
     float limitTimeToRange(float time) const;
     float limitValueToScale(float value) const;
-    QList<float> limitValuesToScale(QList<float> value) const;
     
     PointContainer m_points;
-    const int m_dimension;
     RangeF m_valueRange;
 };
 
@@ -207,15 +192,10 @@ inline float CurveModel::Point::time() const
 {
     return m_time;
 }
-inline float CurveModel::Point::value(int index) const
+inline float CurveModel::Point::value() const
 {
-    return m_values.value(index);
+    return m_value;
 }
-inline QList<float> CurveModel::Point::values() const
-{
-    return m_values;
-}
-
 inline float CurveModel::Point::tension() const
 {
     return m_tension;
@@ -228,24 +208,21 @@ inline float CurveModel::Point::continuity() const
 {
     return m_continuity;
 }
-
 inline bool CurveModel::Point::isValid() const
 {
     return m_isValid;
 }
-
 inline PointId CurveModel::Point::id() const
 {
     return m_id;
 }
-
 inline bool CurveModel::Point::operator==(Point const& other) const
 {
     return
     (other.isValid() == isValid()) &&
     (other.id() == id()) &&
     (other.time() == time()) &&
-    (other.values() == values()) &&
+    (other.value() == value()) &&
     (other.tension() == tension()) &&
     (other.bias() == bias()) &&
     (other.continuity() == continuity());
@@ -257,4 +234,4 @@ inline bool CurveModel::Point::operator!=(Point const& other) const
 }
 
 
-#endif /* defined(__CurveEditor__CurveModel__) */
+#endif /* CURVEMODEL_H */

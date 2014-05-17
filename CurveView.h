@@ -77,7 +77,7 @@ private slots:
     void valueRangeChanged(RangeF valueRange);
 
 private:
-    QList<PointView*> findPointView(PointId id) const;
+    PointView* findPointView(PointId id) const;
     void updateCurves();
     void updateTransformation();
 
@@ -91,10 +91,10 @@ private:
     
     bool addToSpline(CurveModel::Point const& point);
     bool removeFromSpline(CurveModel::Point const& point);
-    SplineDataSet::iterator findSplinePoint(CurveModel::Point const& point, int index);
+    SplineDataSet::iterator findSplinePoint(CurveModel::Point const& point) const;
     
-    QList<Spline*> m_splines;
-	QMap<Spline*, QGraphicsPathItem*> m_curveViews;
+    Spline* m_spline;
+    QGraphicsPathItem* m_curveView;
 
     QRectF m_snapGridRect;
     bool m_snapToGrid;

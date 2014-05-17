@@ -16,14 +16,12 @@ void Test_CurveModel::cleanup()
 
 void Test_CurveModel::testConstruction()
 {
-    { // Curve with 1 dimension and name "Name"
-        CurveModel curve(1, "Name");
+    { // Curve with name "Name"
+        CurveModel curve("Name");
         CurveTestReceiver receiver(curve);
 
         QVERIFY(curve.pointIds().isEmpty());
         QCOMPARE(curve.numberOfPoints(), 0);
-
-        QCOMPARE(curve.dimension(), 1);
 
         QVERIFY(!curve.timeRange().isValid());
         QVERIFY(curve.valueRange().isValid());
@@ -37,29 +35,23 @@ void Test_CurveModel::testConstruction()
         QCOMPARE(receiver.updatedCount, 0);
         QCOMPARE(receiver.removedCount, 0);
     }
-
-    { // Curve with 3 dimensions and name ""
-        CurveModel curve(3, "");
-        QCOMPARE(curve.dimension(), 3);
-        QCOMPARE(curve.name(), QString(""));
-    }
 }
 
 void Test_CurveModel::testPointAddUpdateRemove()
 {
     { // Test simple adding, updating and removing
-        CurveModel curve(1, "Name");
+        CurveModel curve("Name");
         CurveTestReceiver receiver(curve);
 
         // Add point (1, 10)
-        curve.addPoint(1, {10});
+        curve.addPoint(1, 10);
         QCOMPARE(curve.numberOfPoints(), 1);
         QCOMPARE(receiver.addedCount, 1);
         PointId first = receiver.lastAdded;
         QVERIFY(curve.pointIds().contains(first));
 
         // Add point (5, -1)
-        curve.addPoint(5, {-1});
+        curve.addPoint(5, -1);
         QCOMPARE(curve.numberOfPoints(), 2);
         QCOMPARE(receiver.addedCount, 2);
         PointId second = receiver.lastAdded;
@@ -67,7 +59,7 @@ void Test_CurveModel::testPointAddUpdateRemove()
         QVERIFY(curve.pointIds().contains(second));
 
         // Update first point (1, 10) => (7, 2)
-        curve.updatePoint(first, 7, 2, 0);
+        curve.updatePoint(first, 7, 2);
         QCOMPARE(curve.numberOfPoints(), 2);
         QCOMPARE(receiver.addedCount, 2);
         QCOMPARE(receiver.updatedCount, 1);
@@ -97,79 +89,41 @@ void Test_CurveModel::testPointAddUpdateRemove()
         QVERIFY(!curve.pointIds().contains(second));
     }
 
-    { // Test add errors
-        CurveModel curve(2, "Name");
-        CurveTestReceiver receiver(curve);
-
-        // Try to add point with incorrect dimension (1, {4})
-        {
-            EXPECT_ERRORS;
-            curve.addPoint(1, {4});
-        }
-        QCOMPARE(curve.numberOfPoints(), 0);
-        QCOMPARE(receiver.addedCount, 0);
-        QVERIFY(curve.pointIds().isEmpty());
-
-        // Try to add point with empty value (1, {})
-        {
-            EXPECT_ERRORS;
-            curve.addPoint(1, {});
-        }
-        QCOMPARE(curve.numberOfPoints(), 0);
-        QCOMPARE(receiver.addedCount, 0);
-        QVERIFY(curve.pointIds().isEmpty());
-    }
-
     { // Test update errors
-        CurveModel curve(1, "Name");
+        CurveModel curve("Name");
         CurveTestReceiver receiver(curve);
 
         // Add point (1, 4)
-        curve.addPoint(1, {4});
+        curve.addPoint(1, 4);
         QCOMPARE(receiver.addedCount, 1);
         PointId first = receiver.lastAdded;
 
         // Try to update point with another id
         {
             EXPECT_ERRORS;
-            curve.updatePoint(PointId::generateId(), 2, 5, 0);
+            curve.updatePoint(PointId::generateId(), 2, 5);
         }
 
         // Try to update point with invalid id
         {
             EXPECT_ERRORS;
-            curve.updatePoint(PointId::invalidId(), 2, 5, 0);
+            curve.updatePoint(PointId::invalidId(), 2, 5);
         }
         QCOMPARE(receiver.addedCount, 1);
         QCOMPARE(receiver.updatedCount, 0);
 
         // Update point successfully
-        curve.updatePoint(first, 2, 5, 0);
-        QCOMPARE(receiver.updatedCount, 1);
-
-        // Try to update point with invalid index
-        {
-            EXPECT_ERRORS;
-            curve.updatePoint(first, 3, 7, -1);
-        }
-        // Try to update point with invalid index
-        {
-            EXPECT_ERRORS;
-            curve.updatePoint(first, 3, 7, 1);
-        }
-
-        // No additional notifications
+        curve.updatePoint(first, 2, 5);
         QCOMPARE(receiver.updatedCount, 1);
     }
 
     { // Test remove errors
-        CurveModel curve(1, "Name");
+        CurveModel curve("Name");
         CurveTestReceiver receiver(curve);
 
         // Add point (1, 4)
-        curve.addPoint(1, {4});
+        curve.addPoint(1, 4);
         QCOMPARE(receiver.addedCount, 1);
-        PointId first = receiver.lastAdded;
 
         // Try to remove point with another id
         {
@@ -189,7 +143,7 @@ void Test_CurveModel::testPointAddUpdateRemove()
 
 void Test_CurveModel::testSelection()
 {
-    CurveModel curve(1, "Name");
+    CurveModel curve("Name");
     CurveTestReceiver receiver(curve);
 
     // Initially deselected

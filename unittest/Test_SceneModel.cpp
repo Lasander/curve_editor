@@ -32,7 +32,7 @@ void Test_SceneModel::testCurveAddRemove()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
+        auto curve1 = std::make_shared<CurveModel>("First");
 
         model.addCurve(curve1);
         QVERIFY(model.curves().contains(curve1));
@@ -40,7 +40,7 @@ void Test_SceneModel::testCurveAddRemove()
         QCOMPARE(receiver.lastAdded, curve1);
         QCOMPARE(receiver.removedCount, 0);
 
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
+        auto curve2 = std::make_shared<CurveModel>("Second");
 
         model.addCurve(curve2);
         QVERIFY(model.curves().contains(curve1));
@@ -67,7 +67,7 @@ void Test_SceneModel::testCurveAddRemove()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
+        auto curve1 = std::make_shared<CurveModel>("First");
 
         model.addCurve(curve1);
         QVERIFY(model.curves().contains(curve1));
@@ -97,9 +97,9 @@ void Test_SceneModel::testCurveAddRemove()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
-        auto curve3 = std::make_shared<CurveModel>(1, "Third");
+        auto curve1 = std::make_shared<CurveModel>("First");
+        auto curve2 = std::make_shared<CurveModel>("Second");
+        auto curve3 = std::make_shared<CurveModel>("Third");
 
         // Remove from empty, no effect
         {
@@ -154,8 +154,8 @@ void Test_SceneModel::testCurveSelection()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
+        auto curve1 = std::make_shared<CurveModel>("First");
+        auto curve2 = std::make_shared<CurveModel>("Second");
 
         // Add curves
         model.addCurve(curve1);
@@ -190,9 +190,9 @@ void Test_SceneModel::testCurveSelection()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
-        auto curve3 = std::make_shared<CurveModel>(1, "Third");
+        auto curve1 = std::make_shared<CurveModel>("First");
+        auto curve2 = std::make_shared<CurveModel>("Second");
+        auto curve3 = std::make_shared<CurveModel>("Third");
 
         // Add (unselected) curves
         model.addCurve(curve1);
@@ -242,9 +242,9 @@ void Test_SceneModel::testCurveSelection()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
-        auto curve3 = std::make_shared<CurveModel>(1, "Third");
+        auto curve1 = std::make_shared<CurveModel>("First");
+        auto curve2 = std::make_shared<CurveModel>("Second");
+        auto curve3 = std::make_shared<CurveModel>("Third");
 
         // Add one curve and select
         model.addCurve(curve1);
@@ -280,8 +280,8 @@ void Test_SceneModel::testCurveSelection()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
+        auto curve1 = std::make_shared<CurveModel>("First");
+        auto curve2 = std::make_shared<CurveModel>("Second");
 
         // Add one curve, select and deselect
         model.addCurve(curve1);
@@ -324,8 +324,8 @@ void Test_SceneModel::testTimeRange()
     // Initially invalid time range
     QVERIFY(!model.timeRange().isValid());
 
-    auto curve1 = std::make_shared<CurveModel>(1, "First");
-    auto curve2 = std::make_shared<CurveModel>(1, "Second");
+    auto curve1 = std::make_shared<CurveModel>("First");
+    auto curve2 = std::make_shared<CurveModel>("Second");
 
     // Added curve should have matching time range
     model.addCurve(curve1);
@@ -406,8 +406,8 @@ void Test_SceneModel::testStandardEditors()
     QVERIFY(allCurves->curves().isEmpty());
     QVERIFY(selectedCurves->curves().isEmpty());
 
-    auto curve1 = std::make_shared<CurveModel>(1, "First");
-    auto curve2 = std::make_shared<CurveModel>(1, "Second");
+    auto curve1 = std::make_shared<CurveModel>("First");
+    auto curve2 = std::make_shared<CurveModel>("Second");
 
     // Add (unselected) curve
     model.addCurve(curve1);

@@ -39,7 +39,7 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
         return nullptr;
     }
 
-    auto curve = std::make_shared<CurveModel>(items, stream.attributes().value("name").toString());
+    auto curve = std::make_shared<CurveModel>(stream.attributes().value("name").toString());
 
     while (!stream.atEnd())
     {
@@ -77,7 +77,7 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
             for (auto& valueString : list)
                 values.append(valueString.toFloat());
 
-            curve->addPoint(time, values);
+            curve->addPoint(time, values.at(0));
         }
     }
 
@@ -104,9 +104,7 @@ QList<std::shared_ptr<CurveModel>> loadCurves(QXmlStreamReader& stream)
 
 bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
 {
-    int numberOfItems = curve->dimension();
-
-    stream.writeStartElement((numberOfItems > 1) ? QString("catmull_rom%1").arg(numberOfItems) : "catmull_rom");
+    stream.writeStartElement("catmull_rom");
     stream.writeAttribute("name", curve->name());
 
     for (auto id : curve->pointIds())
@@ -115,12 +113,7 @@ bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
 
         stream.writeEmptyElement("key");
         stream.writeAttribute("time", QString("%1").arg(p.time()));
-
-        QString value = QString("%1").arg(p.value(0));
-        for (int i = 1; i < numberOfItems; ++i)
-            value += QString(" %1").arg(p.value(i));
-
-        stream.writeAttribute("value", value);
+        stream.writeAttribute("value", QString("%1").arg(p.value()));
     }
 
     stream.writeEndElement();
@@ -441,7 +434,6 @@ void SceneModel::serializeCurves(QXmlStreamWriter& stream)
             qWarning() << "Scene curve serialization failed";
             return;
         }
-
 
     stream.writeEndElement();
     stream.writeEndDocument();

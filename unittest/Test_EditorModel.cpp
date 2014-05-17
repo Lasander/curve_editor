@@ -35,7 +35,7 @@ void Test_EditorModel::testCurveAddRemove()
         EditorModel model(RangeF(10, 20), 0.0, 80.0);
         EditorTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
+        auto curve1 = std::make_shared<CurveModel>("First");
 
         model.addCurve(curve1);
         QVERIFY(model.curves().contains(curve1));
@@ -43,7 +43,7 @@ void Test_EditorModel::testCurveAddRemove()
         QCOMPARE(receiver.lastAdded, curve1);
         QCOMPARE(receiver.removedCount, 0);
 
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
+        auto curve2 = std::make_shared<CurveModel>("Second");
 
         model.addCurve(curve2);
         QVERIFY(model.curves().contains(curve1));
@@ -70,7 +70,7 @@ void Test_EditorModel::testCurveAddRemove()
         EditorModel model(RangeF(10, 20), 0.0, 80.0);
         EditorTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
+        auto curve1 = std::make_shared<CurveModel>("First");
 
         model.addCurve(curve1);
         QVERIFY(model.curves().contains(curve1));
@@ -100,9 +100,9 @@ void Test_EditorModel::testCurveAddRemove()
         EditorModel model(RangeF(10, 20), 0.0, 80.0);
         EditorTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>(1, "First");
-        auto curve2 = std::make_shared<CurveModel>(1, "Second");
-        auto curve3 = std::make_shared<CurveModel>(1, "Third");
+        auto curve1 = std::make_shared<CurveModel>("First");
+        auto curve2 = std::make_shared<CurveModel>("Second");
+        auto curve3 = std::make_shared<CurveModel>("Third");
 
         // Remove from empty, no effect
         {

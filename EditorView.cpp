@@ -118,7 +118,7 @@ void EditorView::addNewCurve()
     float timeRangeSize = timeRange.max - timeRange.min;
 
     // New curve with value range [0, 1]
-    std::shared_ptr<CurveModel> newCurve = std::make_shared<CurveModel>(1, "New curve");
+    std::shared_ptr<CurveModel> newCurve = std::make_shared<CurveModel>("New curve");
     newCurve->setValueRange(RangeF(0, 1));
 
     // Add points to 1/6 and 5/6 time

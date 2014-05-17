@@ -18,10 +18,9 @@
 #include <QGraphicsSceneMouseEvent>
 #include <cmath>
 
-PointView::PointView(CurveModel::Point const& pointModel, int index, QGraphicsItem* parent)
+PointView::PointView(CurveModel::Point const& pointModel, QGraphicsItem* parent)
 :   TransformationNode(parent),
-	m_pointModel(pointModel),
-    m_index(index),
+    m_pointModel(pointModel),
     m_gridRect(QRectF(0, 0, 2, 0))
 {
     assert(m_pointModel.isValid());
@@ -44,10 +43,10 @@ PointView::~PointView() {}
 void PointView::setPoint(CurveModel::Point const& pointModel)
 {
     m_pointModel = pointModel;
-    QPointF pos(m_pointModel.time(), m_pointModel.value(m_index));
+    QPointF pos(m_pointModel.time(), m_pointModel.value());
     qDebug() << "PointView::setPoint"  << m_pointModel.id() << pos;
     setPos(pos);
-    m_text->setText(QString("(%1,%2)").arg(QString::number(m_pointModel.time(), 'f', 2), QString::number(m_pointModel.value(m_index), 'f', 2)));
+    m_text->setText(QString("(%1,%2)").arg(QString::number(m_pointModel.time(), 'f', 2), QString::number(m_pointModel.value(), 'f', 2)));
 }
 
 const CurveModel::Point PointView::point() const
@@ -97,7 +96,7 @@ void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveEve
     }
 
 
-    emit pointPositionChanged(m_pointModel.id(), pos.x(), pos.y(), m_index);
+    emit pointPositionChanged(m_pointModel.id(), pos.x(), pos.y());
 }
 void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemMoveEndEvent* event)
 {
@@ -115,7 +114,7 @@ void PointView::handleGraphicsItemEvent(QGraphicsItem* item, GraphicsItemSelecte
     
     bool isSelected = event->data();
     m_text->setVisible(isSelected);
-    emit pointSelectedChanged(m_pointModel.id(), m_index, isSelected);
+    emit pointSelectedChanged(m_pointModel.id(), isSelected);
 }
 
 bool PointView::handleItemChange(QGraphicsItem* item, QGraphicsItem::GraphicsItemChange change, const QVariant& value, QVariant& output)

@@ -108,17 +108,17 @@ void MainWindow::newScene()
     // Create test scene with some curves
     qsrand(QTime::currentTime().msec());
 
-    auto c1 = std::make_shared<CurveModel>(2, "First");
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
-    c1->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50), static_cast<float>((qrand() % 100) - 50)});
+    auto c1 = std::make_shared<CurveModel>("First");
+    c1->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
+    c1->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
+    c1->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
+    c1->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
 
-    auto c2 = std::make_shared<CurveModel>(1, "Second");
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
-    c2->addPoint(qrand() % 100, {static_cast<float>((qrand() % 100) - 50)}, 0, 0, 0);
+    auto c2 = std::make_shared<CurveModel>("Second");
+    c2->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
+    c2->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
+    c2->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
+    c2->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
 
     m_sceneModel = std::make_shared<SceneModel>(RangeF(0, 100));
     m_sceneModel->addCurve(c1);

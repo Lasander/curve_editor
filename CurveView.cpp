@@ -20,14 +20,8 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
     m_snapToGrid(false),
     m_highlightCurve(false)
 {
-	for (int i = 0; i < model->dimension(); ++i)
-    {
-        Spline* spline = new Spline;
-		m_splines.insert(i, spline);
-        
-        QGraphicsPathItem* curveItem = new QGraphicsPathItem(this);
-        m_curveViews[spline] = curveItem;
-    }
+    m_spline = new Spline;
+    m_curveView = new QGraphicsPathItem(this);
     
     connect(m_model.get(), &CurveModel::valueRangeChanged, this, &CurveView::valueRangeChanged);
 
@@ -46,8 +40,6 @@ CurveView::CurveView(std::shared_ptr<CurveModel> model, QGraphicsItem* parent)
 
 CurveView::~CurveView()
 {
-	for (auto p : m_splines)
-		delete p;
 }
 
 void CurveView::setSnapGrid(QRectF gridRect)
@@ -89,18 +81,13 @@ void CurveView::duplicateSelectedPoints()
             // Add point to between this and the next point matching the curve value at that point
             const CurveModel::Point nextPoint = m_model->point(nextPointId);
             float insertTime = (point.time() + nextPoint.time()) / 2.0f;
-
-            QList<float> insertValues;
-            for (int dim = 0; dim < m_splines.size(); ++dim)
-            {
-                insertValues.push_back(m_splines[dim]->value_at(insertTime));
-            }
-            m_model->addPoint(insertTime, insertValues);
+            float insertValue = m_spline->value_at(insertTime);
+            m_model->addPoint(insertTime, insertValue);
         }
         else
         {
             // Add point to +1 second from the original point with the same value(s)
-            m_model->addPoint(point.time() + 1.0, point.values());
+            m_model->addPoint(point.time() + 1.0, point.value());
         }
     }
 }
@@ -134,17 +121,14 @@ void CurveView::pointAdded(PointId id)
     
     const CurveModel::Point point = m_model->point(id);
     assert(point.isValid());
-    assert(findPointView(id).isEmpty());
+    assert(!findPointView(id));
 
-    for (int i = 0; i < m_model->dimension(); ++i)
-    {
-    	PointView* pointView = new PointView(point, i, this);
-        m_pointViews.insert(id, pointView);
-        connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
-        connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
-        connect(this, &CurveView::snapGridChanged, pointView, &PointView::setSnapGrid);
-        pointView->setSnapGrid(m_snapGridRect);
-    }
+    PointView* pointView = new PointView(point, this);
+    m_pointViews.insert(id, pointView);
+    connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
+    connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
+    connect(this, &CurveView::snapGridChanged, pointView, &PointView::setSnapGrid);
+    pointView->setSnapGrid(m_snapGridRect);
 
     bool addOk = addToSpline(point);
     assert(addOk);
@@ -156,15 +140,13 @@ void CurveView::pointUpdated(PointId id)
 {
     qDebug() << "CurveView::pointUpdated" << id;
     
-    QList<PointView*> pointViews = findPointView(id);
-    assert(!pointViews.isEmpty());
-    const CurveModel::Point old(pointViews[0]->point());
-    
+    PointView* pointView = findPointView(id);
+    assert(pointView);
+    const CurveModel::Point old(pointView->point());
+
     const CurveModel::Point p = m_model->point(id);
     assert(p.isValid());
-
-    for (int i = 0; i < m_model->dimension(); ++i)
-	    pointViews[i]->setPoint(p);
+    pointView->setPoint(p);
 
 	bool removeOk = removeFromSpline(old);
     assert(removeOk);
@@ -179,15 +161,14 @@ void CurveView::pointRemoved(PointId id)
 {
     qDebug() << "CurveView::pointRemoved" << id;
     
-    QList<PointView*> pointViews = findPointView(id);
-    assert(!pointViews.isEmpty());
-    const CurveModel::Point removed(pointViews[0]->point());
+    PointView* pointView = findPointView(id);
+    assert(pointView);
+    const CurveModel::Point removed(pointView->point());
 
     int numberOfRemoved = m_pointViews.remove(id);
-    assert(numberOfRemoved == m_model->dimension());
-    
-    for (int i = 0; i < m_model->dimension(); ++i)
-    	delete pointViews[i];
+    assert(numberOfRemoved == 1);
+
+    delete pointView;
     
 	bool removeOk = removeFromSpline(removed);
     assert(removeOk);
@@ -200,9 +181,9 @@ void CurveView::valueRangeChanged(RangeF /*valueRange*/)
     updateTransformation();
 }
 
-QList<PointView*> CurveView::findPointView(PointId id) const
+PointView* CurveView::findPointView(PointId id) const
 {
-    return m_pointViews.values(id);
+    return m_pointViews.value(id, nullptr);
 }
 
 void CurveView::updateCurves()
@@ -218,56 +199,53 @@ void CurveView::updateCurves()
         curvePen.setColor(curvePen.color().darker(100));
     }
 
-    for (auto spline : m_splines)
+    auto cur = m_spline->data().begin();
+    if (cur == m_spline->data().end())
     {
-        auto cur = spline->data().begin();
-        if (cur == spline->data().end())
-        {
-            // No spline data
-            m_curveViews[spline]->setPath(QPainterPath());
-            continue;
-        }
-        
-        constexpr int STEPS_PER_INTERVAL = 20;
-        
-        // Start by moving tot the first point
-        QPainterPath path;
-        path.moveTo(QPointF(cur->time(), cur->value()));
-        
-        auto next = cur + 1;
-        while (next != spline->data().end())
-        {
-            const float startTime = cur->time();
-            const float endTime = next->time();
-            
-            const float time_diff = endTime - startTime;
-
-            if (time_diff > ESPILON)
-            {
-                // If consequtive points have meaningful time difference between them approximate the curve with STEPS_PER_INTERVAL straight lines
-                const float step = time_diff / STEPS_PER_INTERVAL;
-
-                // Start from startTime + step as the first point is handled either
-                // before the loop (moveTo) or by the previous interval. Only loop
-                // until the last point before endTime as the last line is draw outside the
-                // loop.
-                float time = startTime;
-                for (int i = 0; i < STEPS_PER_INTERVAL - 1; ++i)
-                {
-                    time += step;
-                    path.lineTo(QPointF(time, spline->value_at(time)));
-                }
-            }
-            
-            // End the curve section to the next point
-            path.lineTo(QPointF(endTime, next->value()));
-            ++cur;
-            ++next;
-        }
-        
-        m_curveViews[spline]->setPen(curvePen);
-        m_curveViews[spline]->setPath(path);
+        // No spline data
+        m_curveView->setPath(QPainterPath());
+        return;
     }
+
+    constexpr int STEPS_PER_INTERVAL = 20;
+
+    // Start by moving tot the first point
+    QPainterPath path;
+    path.moveTo(QPointF(cur->time(), cur->value()));
+
+    auto next = cur + 1;
+    while (next != m_spline->data().end())
+    {
+        const float startTime = cur->time();
+        const float endTime = next->time();
+
+        const float time_diff = endTime - startTime;
+
+        if (time_diff > ESPILON)
+        {
+            // If consequtive points have meaningful time difference between them approximate the curve with STEPS_PER_INTERVAL straight lines
+            const float step = time_diff / STEPS_PER_INTERVAL;
+
+            // Start from startTime + step as the first point is handled either
+            // before the loop (moveTo) or by the previous interval. Only loop
+            // until the last point before endTime as the last line is draw outside the
+            // loop.
+            float time = startTime;
+            for (int i = 0; i < STEPS_PER_INTERVAL - 1; ++i)
+            {
+                time += step;
+                path.lineTo(QPointF(time, m_spline->value_at(time)));
+            }
+        }
+
+        // End the curve section to the next point
+        path.lineTo(QPointF(endTime, next->value()));
+        ++cur;
+        ++next;
+    }
+        
+    m_curveView->setPen(curvePen);
+    m_curveView->setPath(path);
 }
 
 bool CurveView::addToSpline(CurveModel::Point const& point)
@@ -276,14 +254,11 @@ bool CurveView::addToSpline(CurveModel::Point const& point)
         return false;
     
     pt::math::kochanek_bartels_parameters params(point.tension(), point.bias(), point.continuity());
-    
-	for (int i = 0; i < m_model->dimension(); ++i)
-    {
-        pt::math::kb_data_set<float>::point p(point.id(), point.time(), point.value(i), params);
-        auto point_iter = m_splines[i]->data().add(p);
-        if (point_iter == m_splines[i]->data().end())
-            return false;
-    }
+
+    pt::math::kb_data_set<float>::point p(point.id(), point.time(), point.value(), params);
+    auto point_iter = m_spline->data().add(p);
+    if (point_iter == m_spline->data().end())
+        return false;
     
     return true;
 }
@@ -293,21 +268,17 @@ bool CurveView::removeFromSpline(CurveModel::Point const& point)
     if (!point.isValid())
         return false;
     
-	for (int i = 0; i < m_model->dimension(); ++i)
-    {
-        auto point_iter = findSplinePoint(point, i);
-        if (point_iter == m_splines[i]->data().end())
-            return false;
-        
-        m_splines[i]->data().erase(point_iter);
-    }
-    
+    auto point_iter = findSplinePoint(point);
+    if (point_iter == m_spline->data().end())
+        return false;
+
+    m_spline->data().erase(point_iter);
     return true;
 }
 
-CurveView::SplineDataSet::iterator CurveView::findSplinePoint(CurveModel::Point const& point, int index)
+CurveView::SplineDataSet::iterator CurveView::findSplinePoint(CurveModel::Point const& point) const
 {
-    return m_splines[index]->data().get_point(point.id());
+    return m_spline->data().get_point(point.id());
 }
 
 void CurveView::updateTransformation()
