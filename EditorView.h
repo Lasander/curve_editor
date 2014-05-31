@@ -20,9 +20,11 @@ class QGraphicsScene;
 class QCheckBox;
 QT_END_NAMESPACE
 
-class CurveView;
+class CurveViewAbs;
 class BeatLinesView;
+class CurveModelAbs;
 class CurveModel;
+class StepCurveModel;
 class EditorModel;
 class ScrollPositionKeeper;
 class EditorGraphicsView;
@@ -56,6 +58,7 @@ signals:
      * @param curve The curve
      */
     void newCurveAdded(std::shared_ptr<CurveModel> curve);
+    void newStepCurveAdded(std::shared_ptr<StepCurveModel> curve);
 
 public slots:
     /**
@@ -74,11 +77,14 @@ private slots: /** Signals from EditorModel */
      * @param curve The curve
      */
     void curveAdded(std::shared_ptr<CurveModel> curve);
+    void stepCurveAdded(std::shared_ptr<StepCurveModel> curve);
+
     /**
      * @brief A curve was removed
      * @param curve The curve
      */
     void curveRemoved(std::shared_ptr<CurveModel> curve);
+    void stepCurveRemoved(std::shared_ptr<StepCurveModel> curve);
 
     /**
      * @brief Editor model time range changed.
@@ -88,21 +94,28 @@ private slots: /** Signals from EditorModel */
 
     /** @brief New curve was selected to be added from a context menu. */
     void addNewCurve();
+    void addNewStepCurve();
 
 private:
     virtual void contextMenuEvent(QContextMenuEvent *event) override;
     
-    EditorGraphicsView* m_view;
-    BeatLinesView* m_beatView;
-    ScaleView* m_scaleView;
-    QCheckBox* m_snapToGrid;
-    std::shared_ptr<EditorModel> m_model;
+    std::shared_ptr<EditorModel> m_model; /**< Model */
+
+    EditorGraphicsView* m_view; /**< View to QGraphicsScene */
+    BeatLinesView* m_beatView; /**< View for vertical beat lines */
+    ScaleView* m_scaleView; /**< View for horizontal scale lines */
+    QCheckBox* m_snapToGrid; /**< "Snap" checkbox */
 
     /** Curve container provides mapping between curve models and views. */
-    using Container = QMap<std::shared_ptr<CurveModel>, CurveView*>;
+    using Container = QMap<std::shared_ptr<CurveModelAbs>, CurveViewAbs*>;
     using Iterator = Container::Iterator;
     using ConstIterator = Container::ConstIterator;
+
     Container m_curveViews;
+
+    /** Helpers for common handling of different types of curves and views */
+    template <class T, class U> void internalCurveAdded(std::shared_ptr<U> curve);
+    void internalCurveRemoved(std::shared_ptr<CurveModelAbs> curve);
 };
 
 #endif /* EDITORVIEW_H */

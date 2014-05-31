@@ -105,8 +105,8 @@ void CurveViewAbs::addPoint(PointId id)
 
     PointView* pointView = new PointView(m_model->point(id), this);
     m_pointViews.insert(id, pointView);
-    connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModel::updatePoint);
-    connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModel::pointSelectedChanged);
+    connect(pointView, &PointView::pointPositionChanged, m_model.get(), &CurveModelAbs::updatePoint);
+    connect(pointView, &PointView::pointSelectedChanged, m_model.get(), &CurveModelAbs::pointSelectedChanged);
     connect(this, &CurveViewAbs::snapGridChanged, pointView, &PointView::setSnapGrid);
     pointView->setSnapGrid(getSnapGrid());
 

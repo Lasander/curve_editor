@@ -41,7 +41,9 @@ SOURCES += \
     CurveModelAbs.cpp \
     PointId.cpp \
     Point.cpp \
-    CurveViewAbs.cpp
+    CurveViewAbs.cpp \
+    StepCurveModel.cpp \
+    StepCurveView.cpp \
 
 HEADERS  += \
     CurveModel.h \
@@ -69,4 +71,6 @@ HEADERS  += \
     EditorGraphicsView.h \
     CurveModelAbs.h \
     Point.h \
-    CurveViewAbs.h
+    CurveViewAbs.h \
+    StepCurveModel.h \
+    StepCurveView.h \

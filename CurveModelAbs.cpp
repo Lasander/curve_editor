@@ -107,6 +107,7 @@ void CurveModelAbs::addPoint(float time, QVariant value)
     PointContainer::Iterator pointIt = m_points.insert(time, p);
     if (pointIt == m_points.end())
     {
+        qWarning() << "Point insert failed" << p.id() << time;
         removePointInternal(p.id());
         return;
     }
