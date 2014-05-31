@@ -121,9 +121,9 @@ void MainWindow::newScene()
     c2->addPoint(qrand() % 100, static_cast<float>((qrand() % 100) - 50));
 
     m_sceneModel = std::make_shared<SceneModel>(RangeF(0, 100));
-    m_sceneModel->addCurve(c1);
-    m_sceneModel->addCurve(c2);
-    m_sceneModel->selectCurve(c2);
+//    m_sceneModel->addCurve(c1);
+//    m_sceneModel->addCurve(c2);
+//    m_sceneModel->selectCurve(c2);
     m_sceneModel->setBpm(60);
     m_pointProperties->setSceneModel(m_sceneModel);
     m_sceneProperties->setSceneModel(m_sceneModel);
