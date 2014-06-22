@@ -497,11 +497,18 @@ void SceneModel::serializeCurves(QXmlStreamWriter& stream)
     stream.writeStartElement("curves");
 
     for (auto &curve : m_curves)
-        if (!serializeCurve(curve, stream))
+    {
+        std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+
+        if (!splineCurve)
+            continue;
+
+        if (!serializeCurve(splineCurve, stream))
         {
             qWarning() << "Scene curve serialization failed";
             return;
         }
+    }
 
     stream.writeEndElement();
     stream.writeEndDocument();

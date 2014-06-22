@@ -39,6 +39,11 @@ void StepCurveModel::setOptions(const Options& newOptions)
     }
 }
 
+StepCurveModel* StepCurveModel::getAsStepCurve()
+{
+    return this;
+}
+
 bool StepCurveModel::addPointInternal(PointId id, float time, QVariant value)
 {
     Q_UNUSED(id);

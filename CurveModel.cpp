@@ -87,6 +87,11 @@ void CurveModel::setValueRange(RangeF newRange)
     }
 }
 
+CurveModel* CurveModel::getAsSplineCurve()
+{
+    return this;
+}
+
 RangeF CurveModel::valueRange() const
 {
     return m_valueRange;

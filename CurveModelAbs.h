@@ -7,6 +7,9 @@
 #include <QMultiMap>
 #include <QVariant>
 
+class CurveModel;
+class StepCurveModel;
+
 /** Common implementation for curve models. */
 class CurveModelAbs : public QObject
 {
@@ -49,6 +52,12 @@ public:
 
     /** @return The number of point in the curve. */
     int numberOfPoints() const;
+
+public:
+    /** Downcast (shared) CurveModelAbs to CurveModel. Return nullptr if curve is not the correct type. */
+    static std::shared_ptr<CurveModel> getAsSplineCurve(std::shared_ptr<CurveModelAbs> curve);
+    /** Downcast (shared) CurveModelAbs to StepCurveModel. Return nullptr if curve is not the correct type. */
+    static std::shared_ptr<StepCurveModel> getAsStepCurve(std::shared_ptr<CurveModelAbs> curve);
 
 signals:
     /** @brief A new point was added. */
@@ -142,6 +151,11 @@ protected:
      * @return Possibly limited value
      */
     virtual QVariant limitValueToRange(const QVariant& value) const;
+
+    /** Safe downcast for spline curve */
+    virtual CurveModel* getAsSplineCurve();
+    /** Safe downcast for step curve */
+    virtual StepCurveModel* getAsStepCurve();
 
 private:
     using PointContainer = QMultiMap<float, Point>;

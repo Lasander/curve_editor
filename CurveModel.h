@@ -92,6 +92,9 @@ public slots:
      */
     void setValueRange(RangeF newRange);
 
+protected:
+    virtual CurveModel* getAsSplineCurve() override;
+
 private:
     using PointContainer = QMultiMap<float, Point>;
     using ParamContainer = QMap<PointId, KbParams>;

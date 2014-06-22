@@ -38,6 +38,9 @@ public slots:
      */
     void setOptions(const Options& newOptions);
 
+protected:
+    virtual StepCurveModel* getAsStepCurve() override;
+
 private:
     /** @see CurveModelAbs::addPointInternal */
     virtual bool addPointInternal(PointId id, float time, QVariant value) override;

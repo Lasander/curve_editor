@@ -1,4 +1,6 @@
 #include "CurveModelAbs.h"
+#include "StepCurveModel.h" // Needed for getAsStepCurve
+#include "CurveModel.h" // Needed for getAsSplineCurve
 #include <QDebug>
 
 CurveModelAbs::CurveModelAbs(const QString& name)
@@ -93,6 +95,22 @@ const Point CurveModelAbs::point(PointId id) const
 int CurveModelAbs::numberOfPoints() const
 {
     return m_points.size();
+}
+
+std::shared_ptr<CurveModel> CurveModelAbs::getAsSplineCurve(std::shared_ptr<CurveModelAbs> curve)
+{
+    if (curve->getAsSplineCurve())
+        return std::static_pointer_cast<CurveModel>(curve);
+
+    return std::shared_ptr<CurveModel>();
+}
+
+std::shared_ptr<StepCurveModel> CurveModelAbs::getAsStepCurve(std::shared_ptr<CurveModelAbs> curve)
+{
+    if (curve->getAsStepCurve())
+        return std::static_pointer_cast<StepCurveModel>(curve);
+
+    return std::shared_ptr<StepCurveModel>();
 }
 
 void CurveModelAbs::addPoint(float time, QVariant value)
@@ -219,6 +237,16 @@ void CurveModelAbs::removePointInternal(PointId id)
 QVariant CurveModelAbs::limitValueToRange(const QVariant& value) const
 {
     return value;
+}
+
+CurveModel* CurveModelAbs::getAsSplineCurve()
+{
+    return nullptr;
+}
+
+StepCurveModel* CurveModelAbs::getAsStepCurve()
+{
+    return nullptr;
 }
 
 void CurveModelAbs::forcePointsToTimeRange(RangeF newRange)
