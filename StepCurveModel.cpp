@@ -25,6 +25,9 @@ void StepCurveModel::setOptions(const Options& newOptions)
         return;
     }
 
+    if (newOptions == m_options)
+        return;
+
     m_options = newOptions;
     int previousValue = m_options.firstKey();
 
@@ -37,6 +40,8 @@ void StepCurveModel::setOptions(const Options& newOptions)
         else
             previousValue = p.value().toInt();
     }
+
+    emit optionsChanged(m_options);
 }
 
 StepCurveModel* StepCurveModel::getAsStepCurve()
