@@ -57,8 +57,7 @@ signals:
      * @brief New curve was added through the editor view.
      * @param curve The curve
      */
-    void newCurveAdded(std::shared_ptr<CurveModel> curve);
-    void newStepCurveAdded(std::shared_ptr<StepCurveModel> curve);
+    void newCurveAdded(std::shared_ptr<CurveModelAbs> curve);
 
 public slots:
     /**
@@ -76,15 +75,13 @@ private slots: /** Signals from EditorModel */
      * @brief New curve was added
      * @param curve The curve
      */
-    void curveAdded(std::shared_ptr<CurveModel> curve);
-    void stepCurveAdded(std::shared_ptr<StepCurveModel> curve);
+    void curveAdded(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief A curve was removed
      * @param curve The curve
      */
-    void curveRemoved(std::shared_ptr<CurveModel> curve);
-    void stepCurveRemoved(std::shared_ptr<StepCurveModel> curve);
+    void curveRemoved(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Editor model time range changed.

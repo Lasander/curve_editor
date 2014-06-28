@@ -94,24 +94,32 @@ void PointPropertiesWidget::setSceneModel(std::shared_ptr<SceneModel>& sceneMode
 
 }
 
-void PointPropertiesWidget::addCurve(std::shared_ptr<CurveModel> curve)
+void PointPropertiesWidget::addCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    if (m_curves.contains(curve))
+    std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+    if (!splineCurve)
         return;
 
-    m_curves.push_back(curve);
+    if (m_curves.contains(splineCurve))
+        return;
 
-    connect(curve.get(), SIGNAL(pointSelected(PointId)), this, SLOT(pointSelected(PointId)));
-    connect(curve.get(), SIGNAL(pointDeselected(PointId)), this, SLOT(pointDeselected(PointId)));
+    m_curves.push_back(splineCurve);
+
+    connect(splineCurve.get(), SIGNAL(pointSelected(PointId)), this, SLOT(pointSelected(PointId)));
+    connect(splineCurve.get(), SIGNAL(pointDeselected(PointId)), this, SLOT(pointDeselected(PointId)));
 }
 
-void PointPropertiesWidget::removeCurve(std::shared_ptr<CurveModel> curve)
+void PointPropertiesWidget::removeCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    if (!m_curves.contains(curve))
+    std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+    if (!splineCurve)
         return;
 
-    disconnect(curve.get(), SIGNAL(pointSelected(PointId)), this, SLOT(pointSelected(PointId)));
-    disconnect(curve.get(), SIGNAL(pointDeselected(PointId)), this, SLOT(pointDeselected(PointId)));
+    if (!m_curves.contains(splineCurve))
+        return;
+
+    disconnect(splineCurve.get(), SIGNAL(pointSelected(PointId)), this, SLOT(pointSelected(PointId)));
+    disconnect(splineCurve.get(), SIGNAL(pointDeselected(PointId)), this, SLOT(pointDeselected(PointId)));
 
     QList<PointId> toBeRemoved;
     for (auto point : m_selectedPoints.keys())
@@ -121,7 +129,7 @@ void PointPropertiesWidget::removeCurve(std::shared_ptr<CurveModel> curve)
     for (auto point : toBeRemoved)
         m_selectedPoints.remove(point);
 
-    m_curves.removeAll(curve);
+    m_curves.removeAll(splineCurve);
 }
 
 void PointPropertiesWidget::clearCurves()

@@ -46,12 +46,9 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent)
     connect(m_model.get(), &EditorModel::beatOffsetChanged, m_beatView, &BeatLinesView::setBeatOffset);
     connect(m_model.get(), &EditorModel::bpmChanged, m_beatView, &BeatLinesView::setBpm);
     connect(this, &EditorView::newCurveAdded, m_model.get(), &EditorModel::handleRequestToAddNewCurve);
-    connect(this, &EditorView::newStepCurveAdded, m_model.get(), &EditorModel::handleRequestToAddNewStepCurve);
 
     connect(m_model.get(), &EditorModel::curveAdded, this, &EditorView::curveAdded);
-    connect(m_model.get(), &EditorModel::stepCurveAdded, this, &EditorView::stepCurveAdded);
     connect(m_model.get(), &EditorModel::curveRemoved, this, &EditorView::curveRemoved);
-    connect(m_model.get(), &EditorModel::stepCurveRemoved, this, &EditorView::stepCurveRemoved);
     connect(m_model.get(), &EditorModel::timeRangeChanged, this, &EditorView::timeRangeChanged);
 
     gridLayout->addWidget(m_view, 0, 0);
@@ -65,14 +62,17 @@ EditorView::~EditorView()
 {
 }
 
-void EditorView::curveAdded(std::shared_ptr<CurveModel> curve)
+void EditorView::curveAdded(std::shared_ptr<CurveModelAbs> curve)
 {
-    internalCurveAdded<CurveView>(curve);
-}
+    std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+    std::shared_ptr<StepCurveModel> stepCurve = CurveModelAbs::getAsStepCurve(curve);
 
-void EditorView::stepCurveAdded(std::shared_ptr<StepCurveModel> curve)
-{
-    internalCurveAdded<StepCurveView>(curve);
+    if (splineCurve)
+        internalCurveAdded<CurveView>(splineCurve);
+    else if (stepCurve)
+        internalCurveAdded<StepCurveView>(stepCurve);
+    else
+        qWarning() << "Trying to add unknown curve type";
 }
 
 template <class T, class U>
@@ -93,12 +93,7 @@ void EditorView::internalCurveAdded(std::shared_ptr<U> curve)
     m_curveViews.insert(curve, curveView);
 }
 
-void EditorView::curveRemoved(std::shared_ptr<CurveModel> curve)
-{
-    internalCurveRemoved(curve);
-}
-
-void EditorView::stepCurveRemoved(std::shared_ptr<StepCurveModel> curve)
+void EditorView::curveRemoved(std::shared_ptr<CurveModelAbs> curve)
 {
     internalCurveRemoved(curve);
 }
@@ -170,15 +165,15 @@ void EditorView::addNewStepCurve()
 
     StepCurveModel::Options options;
     options.insert(1, "Uno");
-    options.insert(5, "Dos");
-    options.insert(7, "Tres");
+    options.insert(2, "Dos");
+    options.insert(3, "Tres");
     newCurve->setOptions(options);
 
     // Add points to 1/6 and 5/6 time
     newCurve->addPoint(timeRange.min + timeRangeSize / 6.0, 2);
     newCurve->addPoint(timeRange.min + timeRangeSize * 5.0 / 6.0, 2);
 
-    emit newStepCurveAdded(newCurve);
+    emit newCurveAdded(newCurve);
 }
 
 void EditorView::contextMenuEvent(QContextMenuEvent* event)

@@ -2,6 +2,7 @@
 
 #include "SceneModel.h"
 #include "CurveModel.h"
+#include "StepCurveModel.h"
 
 #include <QGridLayout>
 #include <QDoubleSpinBox>
@@ -56,15 +57,19 @@ public:
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const
     {
+        std::shared_ptr<CurveModelAbs> curve = m_curves[index.row()];
+        Q_ASSERT(curve);
+
+        std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+        std::shared_ptr<StepCurveModel> stepCurve = CurveModelAbs::getAsStepCurve(curve);
+
         if (role == Qt::DisplayRole)
         {
-            std::shared_ptr<CurveModel> curve = m_curves[index.row()];
-
             switch (index.column())
             {
             case 0: return curve->name();
-            case 1: return curve->valueRange().min;
-            case 2: return curve->valueRange().max;
+            case 1: return splineCurve ? splineCurve->valueRange().min : (stepCurve ? 0.0f : -1.0f);
+            case 2: return splineCurve ? splineCurve->valueRange().max : (stepCurve ? stepCurve->options().size() : -1.0f);
             default: break;
             }
             return "Data";
@@ -95,9 +100,14 @@ public:
 
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole)
     {
+        std::shared_ptr<CurveModelAbs> curve = m_curves[index.row()];
+        Q_ASSERT(curve);
+
+        std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+        std::shared_ptr<StepCurveModel> stepCurve = CurveModelAbs::getAsStepCurve(curve);
+
         if (role == Qt::EditRole)
         {
-            std::shared_ptr<CurveModel> curve = m_curves[index.row()];
             switch (index.column())
             {
             case 0:
@@ -114,21 +124,40 @@ public:
             {
                 bool ok = false;
                 double start = value.toDouble(&ok);
-                if (ok && start < curve->valueRange().max)
-                {
-                    curve->setValueRange(RangeF(start, curve->valueRange().max));
-                    return true;
-                }
+                if (splineCurve)
+                    if (ok && start < splineCurve->valueRange().max)
+                    {
+                        splineCurve->setValueRange(RangeF(start, splineCurve->valueRange().max));
+                        return true;
+                    }
                 break;
             }
             case 2:
             {
                 bool ok = false;
                 double end = value.toDouble(&ok);
-                if (ok && end > curve->valueRange().min)
+                if (splineCurve)
                 {
-                    curve->setValueRange(RangeF(curve->valueRange().min, end));
-                    return true;
+                    if (ok && end > splineCurve->valueRange().min)
+                    {
+                        splineCurve->setValueRange(RangeF(splineCurve->valueRange().min, end));
+                        return true;
+                    }
+                }
+                else if (stepCurve)
+                {
+                    if (ok && end > 0)
+                    {
+                        StepCurveModel::Options newOptions;
+                        for (int i = 0; i < end; ++i)
+                        {
+                            char buf[16];
+                            sprintf(buf, "%d", i);
+                            newOptions.insert(i, buf);
+                        }
+                        stepCurve->setOptions(newOptions);
+                        return true;
+                    }
                 }
                 break;
             }
@@ -146,7 +175,7 @@ public:
     }
 
 public slots:
-    void addCurve(std::shared_ptr<CurveModel> curve)
+    void addCurve(std::shared_ptr<CurveModelAbs> curve)
     {
         if (m_curves.contains(curve))
             return;
@@ -156,7 +185,7 @@ public slots:
         endInsertRows();
     }
 
-    void removeCurve(std::shared_ptr<CurveModel> curve)
+    void removeCurve(std::shared_ptr<CurveModelAbs> curve)
     {
         if (!m_curves.contains(curve))
             return;
@@ -177,7 +206,7 @@ public slots:
         endResetModel();
     }
 
-    void selectCurve(std::shared_ptr<CurveModel> curve)
+    void selectCurve(std::shared_ptr<CurveModelAbs> curve)
     {
         int index = m_curves.indexOf(curve);
         if (index == -1)
@@ -193,7 +222,7 @@ public slots:
         }
     }
 
-    void deselectCurve(std::shared_ptr<CurveModel> curve)
+    void deselectCurve(std::shared_ptr<CurveModelAbs> curve)
     {
         int index = m_curves.indexOf(curve);
         if (index == -1)
@@ -236,7 +265,7 @@ public slots:
     }
 
 private:
-    QList<std::shared_ptr<CurveModel>> m_curves;
+    QList<std::shared_ptr<CurveModelAbs>> m_curves;
 
     QItemSelectionModel* m_selectionModel;
 };

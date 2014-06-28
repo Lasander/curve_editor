@@ -14,6 +14,7 @@
 #include <QList>
 #include <memory>
 
+class CurveModelAbs;
 class CurveModel;
 class StepCurveModel;
 
@@ -38,10 +39,7 @@ public:
     ~EditorModel();
     
     /** @return List of curves contained in this editor. */
-    QList<std::shared_ptr<CurveModel>> curves() const;
-
-    /** @return List of step curves contained in this editor. */
-    QList<std::shared_ptr<StepCurveModel>> stepCurves() const;
+    QList<std::shared_ptr<CurveModelAbs>> curves() const;
 
     /** @return Editor time range. */
     const RangeF timeRange() const;
@@ -56,15 +54,13 @@ signals:
      * @brief A curve was associated with this editor.
      * @param curve The curve
      */
-    void curveAdded(std::shared_ptr<CurveModel> curve);
-    void stepCurveAdded(std::shared_ptr<StepCurveModel> curve);
+    void curveAdded(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief A curve was disassociated from this editor.
      * @param curve The curve
      */
-    void curveRemoved(std::shared_ptr<CurveModel> curve);
-    void stepCurveRemoved(std::shared_ptr<StepCurveModel> curve);
+    void curveRemoved(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief The editor time range was changed.
@@ -87,23 +83,20 @@ signals:
      * @brief Request to add a new curve.
      * @param curve Curve to be added.
      */
-    void requestToAddNewCurve(std::shared_ptr<CurveModel> curve);
-    void requestToAddNewStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void requestToAddNewCurve(std::shared_ptr<CurveModelAbs> curve);
 
 public slots:
     /**
      * @brief Associate a curve with this editor.
      * @param curve The curve
      */
-    void addCurve(std::shared_ptr<CurveModel> curve);
-    void addStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void addCurve(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Disassociate a curve from this editor.
      * @param curve The curve
      */
-    void removeCurve(std::shared_ptr<CurveModel> curve);
-    void removeStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void removeCurve(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Disassociate all curves from this editor.
@@ -131,18 +124,16 @@ public slots:
      * @brief Request new curve to be added. Relay the request through signal requestToAddNewCurve().
      * @param curve Curve to be added.
      */
-    void handleRequestToAddNewCurve(std::shared_ptr<CurveModel> curve);
-    void handleRequestToAddNewStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void handleRequestToAddNewCurve(std::shared_ptr<CurveModelAbs> curve);
 
 private:
     /** Curve containers */
-    template <class T> using CurveContainer = QList<std::shared_ptr<T>>;
-    CurveContainer<CurveModel> m_curves;
-    CurveContainer<StepCurveModel> m_stepCurves;
+    using Container = QList<std::shared_ptr<CurveModelAbs>>;
+    Container m_curves;
 
-    /** Template helpers to handle slot actions for common curve behavior (implemented in CurveModelAbs) */
-    template<class T> bool addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container);
-    template<class T> bool removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container);
+    /** Private helpers */
+    bool addCurveInternal(std::shared_ptr<CurveModelAbs> curve);
+    bool removeCurveInternal(std::shared_ptr<CurveModelAbs> curve);
 
     RangeF m_timeRange; /**< Time range */
     double m_beatOffset; /**< Scene music start offset */

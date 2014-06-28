@@ -4,7 +4,7 @@
 #include <QObject>
 
 #include "../RangeF.h"
-#include "../CurveModel.h"
+#include "../CurveModelAbs.h"
 #include "../SceneModel.h"
 
 class SceneTestReceiver : public QObject
@@ -12,22 +12,22 @@ class SceneTestReceiver : public QObject
     Q_OBJECT
 
 public slots:
-    void curveAdded(std::shared_ptr<CurveModel> curve)
+    void curveAdded(std::shared_ptr<CurveModelAbs> curve)
     {
         lastAdded = curve;
         ++addedCount;
     }
-    void curveRemoved(std::shared_ptr<CurveModel> curve)
+    void curveRemoved(std::shared_ptr<CurveModelAbs> curve)
     {
         lastRemoved = curve;
         ++removedCount;
     }
-    void curveSelected(std::shared_ptr<CurveModel> curve)
+    void curveSelected(std::shared_ptr<CurveModelAbs> curve)
     {
         lastSelected = curve;
         ++selectedCount;
     }
-    void curveDeselected(std::shared_ptr<CurveModel> curve)
+    void curveDeselected(std::shared_ptr<CurveModelAbs> curve)
     {
         lastDeselected = curve;
         ++deselectedCount;
@@ -52,14 +52,14 @@ public slots:
 
 
 public:
-    std::shared_ptr<CurveModel> lastAdded;
+    std::shared_ptr<CurveModelAbs> lastAdded;
     int addedCount;
-    std::shared_ptr<CurveModel> lastRemoved;
+    std::shared_ptr<CurveModelAbs> lastRemoved;
     int removedCount;
 
-    std::shared_ptr<CurveModel> lastSelected;
+    std::shared_ptr<CurveModelAbs> lastSelected;
     int selectedCount;
-    std::shared_ptr<CurveModel> lastDeselected;
+    std::shared_ptr<CurveModelAbs> lastDeselected;
     int deselectedCount;
 
     RangeF lastTimeRange;

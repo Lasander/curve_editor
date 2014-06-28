@@ -93,6 +93,7 @@ public slots:
     void setValueRange(RangeF newRange);
 
 protected:
+    /** Implement safe downcast to spline curve */
     virtual CurveModel* getAsSplineCurve() override;
 
 private:

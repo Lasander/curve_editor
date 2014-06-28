@@ -7,6 +7,7 @@
 #include <QList>
 #include <memory>
 
+class CurveModelAbs;
 class CurveModel;
 class StepCurveModel;
 class EditorModel;
@@ -42,7 +43,7 @@ public:
     static std::shared_ptr<SceneModel> create(QXmlStreamReader& stream);
 
     /** @return Curves contained in this scene. */
-    QList<std::shared_ptr<CurveModel>> curves() const;
+    QList<std::shared_ptr<CurveModelAbs>> curves() const;
 
     /** @return Scene time range. */
     const RangeF timeRange() const;
@@ -62,20 +63,16 @@ public:
 
 signals:
     /** @brief A curve wad added to the scene. */
-    void curveAdded(std::shared_ptr<CurveModel> curve);
-    void stepCurveAdded(std::shared_ptr<StepCurveModel> curve);
+    void curveAdded(std::shared_ptr<CurveModelAbs> curve);
 
     /** @brief A curve wad removed from the scene. */
-    void curveRemoved(std::shared_ptr<CurveModel> curve);
-    void stepCurveRemoved(std::shared_ptr<StepCurveModel> curve);
+    void curveRemoved(std::shared_ptr<CurveModelAbs> curve);
 
     /** @brief A curve wad selected. Note: Multiple curves can be selected simultaneously. */
-    void curveSelected(std::shared_ptr<CurveModel> curve);
-    void stepCurveSelected(std::shared_ptr<StepCurveModel> curve);
+    void curveSelected(std::shared_ptr<CurveModelAbs> curve);
 
     /** @brief A curve wad deselected. */
-    void curveDeselected(std::shared_ptr<CurveModel> curve);
-    void stepCurveDeselected(std::shared_ptr<StepCurveModel> curve);
+    void curveDeselected(std::shared_ptr<CurveModelAbs> curve);
 
     /** @brief Scene time range changed. */
     void timeRangeChanged(RangeF timeRange);
@@ -90,15 +87,13 @@ public slots:
      * @brief Add new curve to scene.
      * @param curve Curve to add
      */
-    void addCurve(std::shared_ptr<CurveModel> curve);
-    void addStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void addCurve(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Remove curve from scene.
      * @param curve Curve to remove.
      */
-    void removeCurve(std::shared_ptr<CurveModel> curve);
-    void removeStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void removeCurve(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Set scene time range.
@@ -121,15 +116,13 @@ public slots:
      * @brief Select a curve.
      * @param curve Curve to be selected.
      */
-    void selectCurve(std::shared_ptr<CurveModel> curve);
-    void selectStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void selectCurve(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Deselect a curve.
      * @param curve Curve to be deselected.
      */
-    void deselectCurve(std::shared_ptr<CurveModel> curve);
-    void deselectStepCurve(std::shared_ptr<StepCurveModel> curve);
+    void deselectCurve(std::shared_ptr<CurveModelAbs> curve);
 
     /**
      * @brief Serialize scene to xml.
@@ -172,15 +165,12 @@ private slots:
 
 private:
     /** Curve containers */
-    template <class T> using CurveContainer = QList<std::shared_ptr<T>>;
-    CurveContainer<CurveModel> m_curves;
-    CurveContainer<StepCurveModel> m_stepCurves;
+    using Container = QList<std::shared_ptr<CurveModelAbs>>;
+    Container m_curves;
 
-    /** Template helpers to handle slot actions for common curve behavior (implemented in CurveModelAbs) */
-    template<class T> bool addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container);
-    template<class T> bool removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container);
-    template<class T> void selectCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container);
-    template<class T> void deselectCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container);
+    /** Internal helpers */
+    bool addCurveInternal(std::shared_ptr<CurveModelAbs> curve);
+    bool removeCurveInternal(std::shared_ptr<CurveModelAbs> curve);
 
     RangeF m_timeRange; /**< Scene time range */
 

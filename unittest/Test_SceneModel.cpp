@@ -32,15 +32,14 @@ void Test_SceneModel::testCurveAddRemove()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>("First");
+        std::shared_ptr<CurveModelAbs> curve1(new CurveModel("First"));
+        std::shared_ptr<CurveModelAbs> curve2(new CurveModel("Second"));
 
         model.addCurve(curve1);
         QVERIFY(model.curves().contains(curve1));
         QCOMPARE(receiver.addedCount, 1);
         QCOMPARE(receiver.lastAdded, curve1);
         QCOMPARE(receiver.removedCount, 0);
-
-        auto curve2 = std::make_shared<CurveModel>("Second");
 
         model.addCurve(curve2);
         QVERIFY(model.curves().contains(curve1));
@@ -154,8 +153,8 @@ void Test_SceneModel::testCurveSelection()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>("First");
-        auto curve2 = std::make_shared<CurveModel>("Second");
+        std::shared_ptr<CurveModelAbs> curve1(new CurveModel("First"));
+        std::shared_ptr<CurveModelAbs> curve2(new CurveModel("Second"));
 
         // Add curves
         model.addCurve(curve1);
@@ -190,9 +189,9 @@ void Test_SceneModel::testCurveSelection()
         SceneModel model;
         SceneTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>("First");
-        auto curve2 = std::make_shared<CurveModel>("Second");
-        auto curve3 = std::make_shared<CurveModel>("Third");
+        std::shared_ptr<CurveModelAbs> curve1(new CurveModel("First"));
+        std::shared_ptr<CurveModelAbs> curve2(new CurveModel("Second"));
+        std::shared_ptr<CurveModelAbs> curve3(new CurveModel("Third"));
 
         // Add (unselected) curves
         model.addCurve(curve1);

@@ -35,15 +35,14 @@ void Test_EditorModel::testCurveAddRemove()
         EditorModel model(RangeF(10, 20), 0.0, 80.0);
         EditorTestReceiver receiver(model);
 
-        auto curve1 = std::make_shared<CurveModel>("First");
+        std::shared_ptr<CurveModelAbs> curve1(new CurveModel("First"));
+        std::shared_ptr<CurveModelAbs> curve2(new CurveModel("Second"));
 
         model.addCurve(curve1);
         QVERIFY(model.curves().contains(curve1));
         QCOMPARE(receiver.addedCount, 1);
         QCOMPARE(receiver.lastAdded, curve1);
         QCOMPARE(receiver.removedCount, 0);
-
-        auto curve2 = std::make_shared<CurveModel>("Second");
 
         model.addCurve(curve2);
         QVERIFY(model.curves().contains(curve1));

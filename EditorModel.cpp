@@ -14,16 +14,10 @@ EditorModel::~EditorModel()
 {
 }
 
-QList<std::shared_ptr<CurveModel>> EditorModel::curves() const
+QList<std::shared_ptr<CurveModelAbs>> EditorModel::curves() const
 {
     return m_curves;
 }
-
-QList<std::shared_ptr<StepCurveModel>> EditorModel::stepCurves() const
-{
-    return m_stepCurves;
-}
-
 
 const RangeF EditorModel::timeRange() const
 {
@@ -40,26 +34,15 @@ double EditorModel::bpm() const
     return m_bpm;
 }
 
-void EditorModel::addCurve(std::shared_ptr<CurveModel> curve)
+void EditorModel::addCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    if (!addCurveInternal(curve, m_curves))
+    if (!addCurveInternal(curve))
         return;
 
     emit curveAdded(curve);
 }
 
-void EditorModel::addStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    qDebug() << "EditorModel::addStepCurve";
-
-    if (!addCurveInternal(curve, m_stepCurves))
-        return;
-
-    emit stepCurveAdded(curve);
-}
-
-template<class T>
-bool EditorModel::addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container)
+bool EditorModel::addCurveInternal(std::shared_ptr<CurveModelAbs> curve)
 {
     if (!curve)
     {
@@ -67,34 +50,25 @@ bool EditorModel::addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& 
         return false;
     }
 
-    if (container.contains(curve))
+    if (m_curves.contains(curve))
     {
         qWarning() << "Trying to add duplicate curve:" << curve->name();
         return false;
     }
 
-    container.push_back(curve);
+    m_curves.push_back(curve);
     return true;
 }
 
-void EditorModel::removeCurve(std::shared_ptr<CurveModel> curve)
+void EditorModel::removeCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    if (!removeCurveInternal(curve, m_curves))
+    if (!removeCurveInternal(curve))
         return;
 
     emit curveRemoved(curve);
 }
 
-void EditorModel::removeStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    if (!removeCurveInternal(curve, m_stepCurves))
-        return;
-
-    emit stepCurveRemoved(curve);
-}
-
-template<class T>
-bool EditorModel::removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container)
+bool EditorModel::removeCurveInternal(std::shared_ptr<CurveModelAbs> curve)
 {
     if (!curve)
     {
@@ -102,7 +76,7 @@ bool EditorModel::removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T
         return false;
     }
 
-    int removed = container.removeAll(curve);
+    int removed = m_curves.removeAll(curve);
     if (removed < 1)
     {
         qWarning() << "Trying to remove non-existent curve:" << curve->name();
@@ -145,14 +119,7 @@ void EditorModel::setBpm(double bpm)
     }
 }
 
-void EditorModel::handleRequestToAddNewCurve(std::shared_ptr<CurveModel> curve)
+void EditorModel::handleRequestToAddNewCurve(std::shared_ptr<CurveModelAbs> curve)
 {
     emit requestToAddNewCurve(curve);
 }
-
-void EditorModel::handleRequestToAddNewStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    qDebug() << "EditorModel::handleRequestToAddNewStepCurve";
-    emit requestToAddNewStepCurve(curve);
-}
-

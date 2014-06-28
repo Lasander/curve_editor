@@ -136,9 +136,7 @@ SceneModel::SceneModel(RangeF timeRange)
 {
     // Connect standard editors
     connect(this, &SceneModel::curveAdded, m_AllCurvesEditor.get(), &EditorModel::addCurve);
-    connect(this, &SceneModel::stepCurveAdded, m_AllCurvesEditor.get(), &EditorModel::addStepCurve);
     connect(this, &SceneModel::curveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeCurve);
-    connect(this, &SceneModel::stepCurveRemoved, m_AllCurvesEditor.get(), &EditorModel::removeStepCurve);
     connect(this, &SceneModel::timeRangeChanged, m_AllCurvesEditor.get(), &EditorModel::setTimeRange);
     connect(this, &SceneModel::beatOffsetChanged, m_AllCurvesEditor.get(), &EditorModel::setBeatOffset);
     connect(this, &SceneModel::bpmChanged, m_AllCurvesEditor.get(), &EditorModel::setBpm);
@@ -150,9 +148,7 @@ SceneModel::SceneModel(RangeF timeRange)
     connect(this, &SceneModel::bpmChanged, m_SelectedCurvesEditor.get(), &EditorModel::setBpm);
 
     connect(m_AllCurvesEditor.get(), &EditorModel::requestToAddNewCurve, this, &SceneModel::addCurve);
-    connect(m_AllCurvesEditor.get(), &EditorModel::requestToAddNewStepCurve, this, &SceneModel::addStepCurve);
     connect(m_SelectedCurvesEditor.get(), &EditorModel::requestToAddNewCurve, this, &SceneModel::addCurve);
-    connect(m_SelectedCurvesEditor.get(), &EditorModel::requestToAddNewStepCurve, this, &SceneModel::addStepCurve);
 }
 
 std::shared_ptr<SceneModel> SceneModel::create(QXmlStreamReader& stream)
@@ -190,7 +186,7 @@ std::shared_ptr<SceneModel> SceneModel::create(QXmlStreamReader& stream)
         }
         else if (stream.isStartElement() && stream.name().contains("curves", Qt::CaseSensitive))
         {
-            CurveContainer<CurveModel> newCurves = ::loadCurves(stream);
+            QList<std::shared_ptr<CurveModel>> newCurves = ::loadCurves(stream);
             for (auto &curve : newCurves)
                 sceneModel->addCurve(curve);
         }
@@ -209,7 +205,7 @@ SceneModel::~SceneModel()
     // Editors are disconnected automatically
 }
 
-QList<std::shared_ptr<CurveModel>> SceneModel::curves() const
+QList<std::shared_ptr<CurveModelAbs>> SceneModel::curves() const
 {
     return m_curves;
 }
@@ -244,9 +240,9 @@ const QString& SceneModel::fileName() const
     return m_fileName;
 }
 
-void SceneModel::addCurve(std::shared_ptr<CurveModel> curve)
+void SceneModel::addCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    if (!addCurveInternal(curve, m_curves))
+    if (!addCurveInternal(curve))
         return;
 
     emit curveAdded(curve);
@@ -255,19 +251,7 @@ void SceneModel::addCurve(std::shared_ptr<CurveModel> curve)
         emit curveSelected(curve);
 }
 
-void SceneModel::addStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    if (!addCurveInternal(curve, m_stepCurves))
-        return;
-
-    emit stepCurveAdded(curve);
-
-    if (curve->isSelected())
-        emit stepCurveSelected(curve);
-}
-
-template<class T>
-bool SceneModel::addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container)
+bool SceneModel::addCurveInternal(std::shared_ptr<CurveModelAbs> curve)
 {
     if (!curve)
     {
@@ -275,7 +259,7 @@ bool SceneModel::addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& c
         return false;
     }
 
-    if (container.contains(curve))
+    if (m_curves.contains(curve))
     {
         qWarning() << "Trying to add duplicate curve" << curve->name();
         return false;
@@ -289,13 +273,13 @@ bool SceneModel::addCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& c
     connect(curve.get(), &CurveModelAbs::selectedChanged, this, &SceneModel::curveSelectionChanged);
     connect(curve.get(), &CurveModelAbs::pointRemoved, this, &SceneModel::curvePointRemoved);
 
-    container.push_back(curve);
+    m_curves.push_back(curve);
     return true;
 }
 
-void SceneModel::removeCurve(std::shared_ptr<CurveModel> curve)
+void SceneModel::removeCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    if (!removeCurveInternal(curve, m_curves))
+    if (!removeCurveInternal(curve))
         return;
 
     if (curve->isSelected())
@@ -304,19 +288,7 @@ void SceneModel::removeCurve(std::shared_ptr<CurveModel> curve)
     emit curveRemoved(curve);
 }
 
-void SceneModel::removeStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    if (!removeCurveInternal(curve, m_stepCurves))
-        return;
-
-    if (curve->isSelected())
-        emit stepCurveDeselected(curve);
-
-    emit stepCurveRemoved(curve);
-}
-
-template<class T>
-bool SceneModel::removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container)
+bool SceneModel::removeCurveInternal(std::shared_ptr<CurveModelAbs> curve)
 {
     if (!curve)
     {
@@ -324,7 +296,7 @@ bool SceneModel::removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>
         return false;
     }
 
-    if (!container.contains(curve))
+    if (!m_curves.contains(curve))
     {
         qWarning() << "Trying to remove non-existent curve";
         return false;
@@ -338,7 +310,7 @@ bool SceneModel::removeCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>
     disconnect(this, &SceneModel::timeRangeChanged, curve.get(), &CurveModelAbs::setTimeRange);
 
     // Remove all instance, just in case
-    container.removeAll(curve);
+    m_curves.removeAll(curve);
 
     return true;
 }
@@ -370,20 +342,9 @@ void SceneModel::setBpm(double bpm)
     }
 }
 
-void SceneModel::selectCurve(std::shared_ptr<CurveModel> curve)
+void SceneModel::selectCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    selectCurveInternal(curve, m_curves);
-}
-
-void SceneModel::selectStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    selectCurveInternal(curve, m_stepCurves);
-}
-
-template<class T>
-void SceneModel::selectCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container)
-{
-    if (!curve || !container.contains(curve))
+    if (!curve || !m_curves.contains(curve))
     {
         qWarning() << "Trying to select invalid curve";
         return;
@@ -397,21 +358,9 @@ void SceneModel::selectCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>
     curve->setSelected(true); // CurveModelAbs selection notification will result in emit curveSelected
 }
 
-
-void SceneModel::deselectCurve(std::shared_ptr<CurveModel> curve)
+void SceneModel::deselectCurve(std::shared_ptr<CurveModelAbs> curve)
 {
-    deselectCurveInternal(curve, m_curves);
-}
-
-void SceneModel::deselectStepCurve(std::shared_ptr<StepCurveModel> curve)
-{
-    deselectCurveInternal(curve, m_stepCurves);
-}
-
-template<class T>
-void SceneModel::deselectCurveInternal(std::shared_ptr<T> curve, CurveContainer<T>& container)
-{
-    if (!curve || !container.contains(curve))
+    if (!curve || !m_curves.contains(curve))
     {
         qWarning() << "Trying to deselect invalid curve";
         return;
@@ -428,7 +377,7 @@ void SceneModel::deselectCurveInternal(std::shared_ptr<T> curve, CurveContainer<
 
 void SceneModel::curveSelectionChanged(bool status)
 {
-    const CurveModel* sendingCurve = static_cast<CurveModel*>(sender());
+    const void* sendingCurve = sender();
 
     // Find the curve that sent the notification and emit (de)selection
     for (auto curve : m_curves)
@@ -448,7 +397,7 @@ void SceneModel::curvePointRemoved(PointId point)
 {
     Q_UNUSED(point);
 
-    const CurveModel* sendingCurve = static_cast<CurveModel*>(sender());
+    const void* sendingCurve = sender();
 
     // Find the curve that sent the notification and emit (de)selection
     for (auto curve : m_curves)
@@ -501,7 +450,7 @@ void SceneModel::serializeCurves(QXmlStreamWriter& stream)
         std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
 
         if (!splineCurve)
-            continue;
+            continue; // Skip step curves for now
 
         if (!serializeCurve(splineCurve, stream))
         {

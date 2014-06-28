@@ -12,12 +12,12 @@ class EditorTestReceiver : public QObject
     Q_OBJECT
 
 public slots:
-    void curveAdded(std::shared_ptr<CurveModel> curve)
+    void curveAdded(std::shared_ptr<CurveModelAbs> curve)
     {
         lastAdded = curve;
         ++addedCount;
     }
-    void curveRemoved(std::shared_ptr<CurveModel> curve)
+    void curveRemoved(std::shared_ptr<CurveModelAbs> curve)
     {
         lastRemoved = curve;
         ++removedCount;
@@ -40,9 +40,9 @@ public slots:
     }
 
 public:
-    std::shared_ptr<CurveModel> lastAdded;
+    std::shared_ptr<CurveModelAbs> lastAdded;
     int addedCount;
-    std::shared_ptr<CurveModel> lastRemoved;
+    std::shared_ptr<CurveModelAbs> lastRemoved;
     int removedCount;
 
     RangeF lastTimeRange;

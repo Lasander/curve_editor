@@ -39,6 +39,7 @@ public slots:
     void setOptions(const Options& newOptions);
 
 protected:
+    /** Implement safe downcast to step curve */
     virtual StepCurveModel* getAsStepCurve() override;
 
 private:

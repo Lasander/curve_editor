@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QMap>
 
+class CurveModelAbs;
 class CurveModel;
 class SceneModel;
 
@@ -22,8 +23,8 @@ public:
     void setSceneModel(std::shared_ptr<SceneModel>& sceneModel);
 
 private slots:
-    void addCurve(std::shared_ptr<CurveModel> curve);
-    void removeCurve(std::shared_ptr<CurveModel> curve);
+    void addCurve(std::shared_ptr<CurveModelAbs> curve);
+    void removeCurve(std::shared_ptr<CurveModelAbs> curve);
     void clearCurves();
 
     void pointSelected(PointId id);
