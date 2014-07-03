@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QMultiMap>
 #include <QVariant>
+#include <memory>
 
 class CurveModel;
 class StepCurveModel;

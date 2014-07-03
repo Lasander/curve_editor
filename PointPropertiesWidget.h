@@ -4,6 +4,7 @@
 #include "PointId.h"
 #include <QWidget>
 #include <QMap>
+#include <memory>
 
 class CurveModelAbs;
 class CurveModel;

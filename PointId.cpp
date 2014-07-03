@@ -1,5 +1,6 @@
 #include "PointId.h"
 #include <QDebug>
+#include <QMutex>
 
 PointId PointId::generateId()
 {
