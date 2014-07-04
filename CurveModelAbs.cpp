@@ -113,24 +113,26 @@ std::shared_ptr<StepCurveModel> CurveModelAbs::getAsStepCurve(std::shared_ptr<Cu
     return std::shared_ptr<StepCurveModel>();
 }
 
-void CurveModelAbs::addPoint(float time, QVariant value)
+PointId CurveModelAbs::addPoint(float time, QVariant value)
 {
     // Add to point container
     value = limitValueToRange(value);
     Point p(time, value, false);
 
     if (!addPointInternal(p.id(), time, value))
-        return;
+        return PointId::invalidId();
 
     PointContainer::Iterator pointIt = m_points.insert(time, p);
     if (pointIt == m_points.end())
     {
         qWarning() << "Point insert failed" << p.id() << time;
         removePointInternal(p.id());
-        return;
+        return PointId::invalidId();
     }
 
     emit pointAdded(p.id());
+
+    return p.id();
 }
 
 void CurveModelAbs::updatePoint(PointId id, float time, QVariant value)

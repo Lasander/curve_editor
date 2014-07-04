@@ -103,8 +103,9 @@ public slots:
      * @param time Point time
      * @param value Point value
      * @par Tension, bias and continuity parameters default to 0.
+     * @return Id of the new point or invalid in case add failed
      */
-    void addPoint(float time, QVariant value);
+    PointId addPoint(float time, QVariant value);
     /**
      * @brief Update point time and/or value for one dimension of an existing point.
      *

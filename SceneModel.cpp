@@ -12,7 +12,9 @@
 ///////////////////////////////////////
 
 /**
- * @brief Helper to read one float attribute from xml stream
+ * Helper to read one float attribute from xml stream.
+ * It is ok to try to read non-existent attributes; the stream won't be messed up.
+ *
  * @param stream Stream
  * @param attribute Attribute name
  * @param result [out] Resulting float, not touched if read fails.
@@ -20,6 +22,9 @@
  */
 bool readFloat(QXmlStreamReader& stream, QString attribute, float& result)
 {
+    if (!stream.attributes().hasAttribute(attribute))
+        return false;
+
     bool ok = false;
     const QString string = stream.attributes().value(attribute).toString();
     const float value = string.toFloat(&ok);
@@ -88,7 +93,19 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
                 continue;
 
             const float scaledValue = value * valueMultiplier + valueOffset;
-            curve->addPoint(time, scaledValue);
+            const PointId pid = curve->addPoint(time, scaledValue);
+            if (!pid.isValid())
+                continue;
+
+            // Tension, bias and continuity are optional, don't care if they don't exist
+            float tension = 0.0f;
+            float bias = 0.0f;
+            float continuity = 0.0f;
+            readFloat(stream, "tension", tension);
+            readFloat(stream, "bias", bias);
+            readFloat(stream, "continuity", continuity);
+
+            curve->updatePointParams(pid, tension, bias, continuity);
         }
         else if (stream.isStartElement() && stream.name() == "value_offset")
         {
@@ -148,6 +165,16 @@ bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
 
         stream.writeAttribute("time", QString("%1").arg(time));
         stream.writeAttribute("value", QString("%1").arg(value));
+
+        const CurveModel::KbParams params = curve->params(id);
+        if (params.tension() != 0.0f)
+            stream.writeAttribute("tension", QString("%1").arg(params.tension()));
+
+        if (params.bias() != 0.0f)
+            stream.writeAttribute("bias", QString("%1").arg(params.bias()));
+
+        if (params.continuity() != 0.0f)
+            stream.writeAttribute("continuity", QString("%1").arg(params.continuity()));
     }
 
     stream.writeEndElement();
