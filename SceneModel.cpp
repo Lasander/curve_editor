@@ -11,6 +11,29 @@
 ///////////////////////////////////////
 ///////////////////////////////////////
 
+/**
+ * @brief Helper to read one float attribute from xml stream
+ * @param stream Stream
+ * @param attribute Attribute name
+ * @param result [out] Resulting float, not touched if read fails.
+ * @return True if read succeeded
+ */
+bool readFloat(QXmlStreamReader& stream, QString attribute, float& result)
+{
+    bool ok = false;
+    const QString string = stream.attributes().value(attribute).toString();
+    const float value = string.toFloat(&ok);
+    if (!ok)
+    {
+        QString message = QString("Bad float value for element: ") + stream.name().toString() + ", attribute:" + attribute + " - " + string;
+        stream.raiseError(message);
+        return false;
+    }
+
+    result = value;
+    return true;
+}
+
 std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
 {
     // Read start of curve element
@@ -28,19 +51,12 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
     // Save element name
     QString elementName = stream.name().toString();
 
-    // Parse item count
-    QString temp = elementName;
-    temp = temp.remove(0, strlen("catmull_rom"));
-    bool ok = false;
-    int items = temp.toInt(&ok);
-    if (!ok) items = 1;
-    if (items < 1 || items > 4)
-    {
-        stream.raiseError(QString("Unsupported curve item count: %1").arg(items));
-        return nullptr;
-    }
+    // Create a curve object
+    std::shared_ptr<CurveModel> curve = std::make_shared<CurveModel>(stream.attributes().value("name").toString());
 
-    auto curve = std::make_shared<CurveModel>(stream.attributes().value("name").toString());
+    // Value range (offset + multiplier)
+    float valueOffset = 0;
+    float valueMultiplier = 1;
 
     while (!stream.atEnd())
     {
@@ -49,36 +65,40 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
         {
             if (stream.name().compare(elementName, Qt::CaseSensitive) == 0)
             {
+                // Curve stream ended
+                qDebug() << "Curve" << curve->name() << "serialized";
+                const RangeF valueRange(valueOffset, valueOffset + valueMultiplier);
+                curve->setValueRange(valueRange);
                 return curve;
             }
         }
 
+        // Debug print all attributes
         for (auto it = stream.attributes().cbegin(); it < stream.attributes().cend(); ++it)
             qDebug() << "Attribute: " << it->name() << "=" << it->value();
 
         if (stream.isStartElement() && stream.name() == "key")
         {
-            bool ok = false;
-            float time = stream.attributes().value("time").toString().toFloat(&ok);
-            if (!ok)
-            {
-                stream.raiseError(QString("Bad time attribute for key point"));
+            float time;
+            if (!readFloat(stream, "time", time))
                 continue;
-            }
 
-            QString valueStr = stream.attributes().value("value").toString();
-            QStringList list = valueStr.split(QRegExp("\\s+"));
-            if (list.size() != items)
-            {
-                stream.raiseError(QString("Curve/key item count mismatch %1 vs. %2").arg(items).arg(list.size()));
+            float value;
+            if (!readFloat(stream, "value", value))
                 continue;
-            }
 
-            QList<float> values;
-            for (auto& valueString : list)
-                values.append(valueString.toFloat());
-
-            curve->addPoint(time, values.at(0));
+            const float scaledValue = value * valueMultiplier + valueOffset;
+            curve->addPoint(time, scaledValue);
+        }
+        else if (stream.isStartElement() && stream.name() == "value_offset")
+        {
+            if (!readFloat(stream, "v", valueOffset))
+                continue;
+        }
+        else if (stream.isStartElement() && stream.name() == "value_multiplier")
+        {
+            if (!readFloat(stream, "v", valueMultiplier))
+                continue;
         }
     }
 
@@ -108,13 +128,26 @@ bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
     stream.writeStartElement("catmull_rom");
     stream.writeAttribute("name", curve->name());
 
+    // Value range (offset + multiplier)
+    const RangeF valueRange = curve->valueRange();
+    const float offset = valueRange.min;
+    const float multiplier = valueRange.max - valueRange.min;
+    stream.writeEmptyElement("value_offset");
+    stream.writeAttribute("v", QString("%1").arg(valueRange.min));
+    stream.writeEmptyElement("value_multiplier");
+    stream.writeAttribute("v", QString("%1").arg(multiplier));
+
     for (auto id : curve->pointIds())
     {
         const Point p = curve->point(id);
 
         stream.writeEmptyElement("key");
-        stream.writeAttribute("time", QString("%1").arg(p.time()));
-        stream.writeAttribute("value", QString("%1").arg(p.value().toFloat()));
+
+        const float time = p.time();
+        const float value = (p.value().toFloat() - offset) / multiplier;
+
+        stream.writeAttribute("time", QString("%1").arg(time));
+        stream.writeAttribute("value", QString("%1").arg(value));
     }
 
     stream.writeEndElement();
