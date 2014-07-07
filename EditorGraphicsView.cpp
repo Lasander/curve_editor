@@ -101,9 +101,14 @@ void EditorGraphicsView::resizeEvent(QResizeEvent* event)
 
 void EditorGraphicsView::wheelEvent(QWheelEvent* event)
 {
-    qDebug() << "wheelEvent" << event->delta();
+    int delta = event->delta();
+    qDebug() << "wheelEvent" << delta;
 
-    qreal newTimeScale = m_timeScale + (event->delta() / 1000.0);
+    // Control modifier boosts 10x
+    if (event->modifiers().testFlag(Qt::ControlModifier))
+        delta *= 10;
+
+    qreal newTimeScale = m_timeScale + (delta / 1000.0);
     if (newTimeScale < 0.01)
         newTimeScale = 0.01;
     if (newTimeScale > 100)
