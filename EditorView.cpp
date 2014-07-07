@@ -24,6 +24,9 @@
 #include <QScrollBar>
 #include <QGridLayout>
 #include <QCheckBox>
+#include <QDebug>
+#include <QKeyEvent>
+
 
 EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent)
   : QWidget(parent),
@@ -50,6 +53,15 @@ EditorView::EditorView(std::shared_ptr<EditorModel> model, QWidget* parent)
     connect(m_model.get(), &EditorModel::curveAdded, this, &EditorView::curveAdded);
     connect(m_model.get(), &EditorModel::curveRemoved, this, &EditorView::curveRemoved);
     connect(m_model.get(), &EditorModel::timeRangeChanged, this, &EditorView::timeRangeChanged);
+
+    // Actions
+    m_addPointsAction = new QAction(tr("Add point(s)"), this);
+    m_addPointsAction->setStatusTip(tr("Add a new point matching each selected point"));
+    connect(m_addPointsAction, SIGNAL(triggered()), this, SLOT(duplicateSelectedPoints()));
+
+    m_removePointsAction = new QAction(tr("Remove point(s)"), this);
+    m_removePointsAction->setStatusTip(tr("Remove all selected points"));
+    connect(m_removePointsAction, SIGNAL(triggered()), this, SLOT(removeSelectedPoints()));
 
     gridLayout->addWidget(m_view, 0, 0);
     gridLayout->addWidget(m_snapToGrid, 0, 1);
@@ -185,12 +197,10 @@ void EditorView::contextMenuEvent(QContextMenuEvent* event)
     
 	if (selectedItems.size() > 0)
     {
-        const bool multipleSelected = selectedItems.size() > 1;
-
         QMenu pointsMenu;
         pointsMenu.setTitle("Points");
-        pointsMenu.addAction(multipleSelected ? "Add points" : "Add point", this, SLOT(duplicateSelectedPoints()));
-        pointsMenu.addAction(multipleSelected ? "Remove points" : "Remove point", this, SLOT(removeSelectedPoints()));
+        pointsMenu.addAction(m_addPointsAction);
+        pointsMenu.addAction(m_removePointsAction);
         pointsMenu.exec(event->globalPos());
     }
     else
@@ -201,4 +211,32 @@ void EditorView::contextMenuEvent(QContextMenuEvent* event)
         curveMenu.addAction("Add new step curve", this, SLOT(addNewStepCurve()));
         curveMenu.exec(event->globalPos());
     }
+}
+
+void EditorView::keyPressEvent(QKeyEvent* event)
+{
+    qDebug() << "keyPress" << event->key();
+
+    switch (event->key())
+    {
+    case Qt::Key_Insert:
+        duplicateSelectedPoints();
+        event->accept();
+        break;
+
+    case Qt::Key_Delete:
+        removeSelectedPoints();
+        event->accept();
+        break;
+
+    default:
+        break;
+    }
+
+    event->ignore();
+}
+
+void EditorView::keyReleaseEvent(QKeyEvent* event)
+{
+    qDebug() << "keyRelease" << event->key();
 }

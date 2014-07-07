@@ -18,6 +18,8 @@
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
 class QCheckBox;
+class QKeyEvent;
+class QAction;
 QT_END_NAMESPACE
 
 class CurveViewAbs;
@@ -94,7 +96,10 @@ private slots: /** Signals from EditorModel */
     void addNewStepCurve();
 
 private:
+    /** Event handling */
     virtual void contextMenuEvent(QContextMenuEvent *event) override;
+    virtual void keyPressEvent(QKeyEvent* event) override;
+    virtual void keyReleaseEvent(QKeyEvent* event) override;
     
     std::shared_ptr<EditorModel> m_model; /**< Model */
 
@@ -113,6 +118,9 @@ private:
     /** Helpers for common handling of different types of curves and views */
     template <class T, class U> void internalCurveAdded(std::shared_ptr<U> curve);
     void internalCurveRemoved(std::shared_ptr<CurveModelAbs> curve);
+
+    QAction* m_addPointsAction;
+    QAction* m_removePointsAction;
 };
 
 #endif /* EDITORVIEW_H */
