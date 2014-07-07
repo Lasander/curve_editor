@@ -12,12 +12,12 @@
 ///////////////////////////////////////
 
 /**
- * Helper to read one float attribute from xml stream.
+ * Helpers to read one attribute value from xml stream.
  * It is ok to try to read non-existent attributes; the stream won't be messed up.
  *
  * @param stream Stream
  * @param attribute Attribute name
- * @param result [out] Resulting float, not touched if read fails.
+ * @param result [out] Resulting value, not touched if read fails.
  * @return True if read succeeded
  */
 bool readFloat(QXmlStreamReader& stream, QString attribute, float& result)
@@ -36,6 +36,32 @@ bool readFloat(QXmlStreamReader& stream, QString attribute, float& result)
     }
 
     result = value;
+    return true;
+}
+bool readInt(QXmlStreamReader& stream, QString attribute, int& result)
+{
+    if (!stream.attributes().hasAttribute(attribute))
+        return false;
+
+    bool ok = false;
+    const QString string = stream.attributes().value(attribute).toString();
+    const int value = string.toInt(&ok);
+    if (!ok)
+    {
+        QString message = QString("Bad int value for element: ") + stream.name().toString() + ", attribute:" + attribute + " - " + string;
+        stream.raiseError(message);
+        return false;
+    }
+
+    result = value;
+    return true;
+}
+bool readString(QXmlStreamReader& stream, QString attribute, QString& result)
+{
+    if (!stream.attributes().hasAttribute(attribute))
+        return false;
+
+    result = stream.attributes().value(attribute).toString();
     return true;
 }
 
@@ -71,7 +97,7 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
             if (stream.name().compare(elementName, Qt::CaseSensitive) == 0)
             {
                 // Curve stream ended
-                qDebug() << "Curve" << curve->name() << "serialized";
+                qDebug() << "Curve" << curve->name() << "deserialized";
                 const RangeF valueRange(valueOffset, valueOffset + valueMultiplier);
                 curve->setValueRange(valueRange);
                 return curve;
@@ -123,9 +149,93 @@ std::shared_ptr<CurveModel> createCurve(QXmlStreamReader& stream)
     return nullptr;
 }
 
-QList<std::shared_ptr<CurveModel>> loadCurves(QXmlStreamReader& stream)
+StepCurveModel::Options readOptions(QXmlStreamReader& stream)
 {
-    QList<std::shared_ptr<CurveModel>> curves;
+    Q_ASSERT(stream.isStartElement() && (stream.name() == "options"));
+
+    StepCurveModel::Options options;
+
+    while (!stream.atEnd())
+    {
+        stream.readNext();
+        if (stream.isEndElement() && (stream.name() == "options"))
+            return options;
+
+        if (stream.isStartElement() && (stream.name() == "option"))
+        {
+            int value;
+            if (!readInt(stream, "value", value))
+                continue;
+
+            QString string;
+            if (!readString(stream, "string", string))
+                continue;
+
+            options.insert(value, string);
+        }
+    }
+
+    stream.raiseError("Unexpected stream end");
+    options.clear();
+    return options;
+}
+
+std::shared_ptr<StepCurveModel> createStepCurve(QXmlStreamReader& stream)
+{
+    Q_ASSERT(stream.isStartElement() && (stream.name() == "step_curve"));
+
+    // Create a curve object
+    std::shared_ptr<StepCurveModel> curve = std::make_shared<StepCurveModel>(stream.attributes().value("name").toString());
+
+    StepCurveModel::Options options;
+
+    while (!stream.atEnd())
+    {
+        stream.readNext();
+        if (stream.isEndElement())
+        {
+            if (stream.name() == "step_curve")
+            {
+                // Curve stream ended
+                qDebug() << "Step curve" << curve->name() << "deserialized";
+                curve->setOptions(options);
+                return curve;
+            }
+        }
+
+        // Debug print all attributes
+        for (auto it = stream.attributes().cbegin(); it < stream.attributes().cend(); ++it)
+            qDebug() << "Attribute: " << it->name() << "=" << it->value();
+
+        if (stream.isStartElement() && stream.name() == "key")
+        {
+            float time;
+            if (!readFloat(stream, "time", time))
+                continue;
+
+            int value;
+            if (!readInt(stream, "value", value))
+                continue;
+
+            curve->addPoint(time, value);
+        }
+        else if (stream.isStartElement() && stream.name() == "options")
+        {
+            options = readOptions(stream);
+            if (!options.empty())
+            {
+                curve->setOptions(options);
+            }
+        }
+    }
+
+    stream.raiseError("Unexpected stream end");
+    return nullptr;
+}
+
+QList<std::shared_ptr<CurveModelAbs>> loadCurves(QXmlStreamReader& stream)
+{
+    QList<std::shared_ptr<CurveModelAbs>> curves;
 
     while (!stream.atEnd() || (stream.isEndElement() && stream.name().contains("curves")))
     {
@@ -135,6 +245,12 @@ QList<std::shared_ptr<CurveModel>> loadCurves(QXmlStreamReader& stream)
             std::shared_ptr<CurveModel> newCurve = createCurve(stream);
             if (newCurve)
                 curves.append(newCurve);
+        }
+        if (stream.isStartElement() && stream.name().contains("step_curve", Qt::CaseSensitive))
+        {
+            std::shared_ptr<StepCurveModel> newStepCurve = createStepCurve(stream);
+            if (newStepCurve)
+                curves.append(newStepCurve);
         }
     }
     return curves;
@@ -175,6 +291,45 @@ bool serializeCurve(std::shared_ptr<CurveModel> curve, QXmlStreamWriter& stream)
 
         if (params.continuity() != 0.0f)
             stream.writeAttribute("continuity", QString("%1").arg(params.continuity()));
+    }
+
+    stream.writeEndElement();
+    return true;
+}
+
+void writeOptions(const StepCurveModel::Options& options, QXmlStreamWriter& stream)
+{
+    stream.writeStartElement("options");
+
+    for (auto it = options.cbegin(); it != options.cend(); ++it)
+    {
+        stream.writeEmptyElement("option");
+        stream.writeAttribute("value", QString("%1").arg(it.key()));
+        stream.writeAttribute("string", QString("%1").arg(it.value()));
+    }
+
+    stream.writeEndElement();
+}
+
+bool serializeStepCurve(std::shared_ptr<StepCurveModel> curve, QXmlStreamWriter& stream)
+{
+    stream.writeStartElement("step_curve");
+    stream.writeAttribute("name", curve->name());
+
+    // Options
+    writeOptions(curve->options(), stream);
+
+    for (auto id : curve->pointIds())
+    {
+        const Point p = curve->point(id);
+
+        stream.writeEmptyElement("key");
+
+        const float time = p.time();
+        const int value = p.value().toInt();
+
+        stream.writeAttribute("time", QString("%1").arg(time));
+        stream.writeAttribute("value", QString("%1").arg(value));
     }
 
     stream.writeEndElement();
@@ -246,7 +401,7 @@ std::shared_ptr<SceneModel> SceneModel::create(QXmlStreamReader& stream)
         }
         else if (stream.isStartElement() && stream.name().contains("curves", Qt::CaseSensitive))
         {
-            QList<std::shared_ptr<CurveModel>> newCurves = ::loadCurves(stream);
+            QList<std::shared_ptr<CurveModelAbs>> newCurves = ::loadCurves(stream);
             for (auto &curve : newCurves)
                 sceneModel->addCurve(curve);
         }
@@ -508,11 +663,18 @@ void SceneModel::serializeCurves(QXmlStreamWriter& stream)
     for (auto &curve : m_curves)
     {
         std::shared_ptr<CurveModel> splineCurve = CurveModelAbs::getAsSplineCurve(curve);
+        std::shared_ptr<StepCurveModel> stepCurve = CurveModelAbs::getAsStepCurve(curve);
 
-        if (!splineCurve)
-            continue; // Skip step curves for now
+        bool retVal = false;
 
-        if (!serializeCurve(splineCurve, stream))
+        if (splineCurve)
+            retVal |= serializeCurve(splineCurve, stream);
+        else if (stepCurve)
+            retVal |= serializeStepCurve(stepCurve, stream);
+        else
+            qWarning() << "Trying to seralize unknown curve type" << curve->name();
+
+        if (!retVal)
         {
             qWarning() << "Scene curve serialization failed";
             return;
