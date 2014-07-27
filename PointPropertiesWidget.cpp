@@ -5,10 +5,20 @@
 #include <QSlider>
 #include <QLabel>
 #include <QGridLayout>
+#include <QLineEdit>
 
 PointPropertiesWidget::PointPropertiesWidget(QWidget* parent)
-:	QWidget(parent)
+:	QWidget(parent),
+    m_singleSelectedPoint(std::make_pair(PointId::invalidId(), nullptr))
 {
+    QLabel* timeLabel = new QLabel("Time");
+    m_timeEdit = new QLineEdit;
+    m_timeEdit->setEnabled(false);
+
+    QLabel* valueLabel = new QLabel("Value");
+    m_valueEdit = new QLineEdit;
+    m_valueEdit->setEnabled(false);
+
     QLabel* tensionLabel = new QLabel("Tension");
     m_tensionSlider = new QSlider(Qt::Horizontal);
     m_tensionSlider->setMinimum(-100);
@@ -36,13 +46,18 @@ PointPropertiesWidget::PointPropertiesWidget(QWidget* parent)
     m_continuitySlider->setEnabled(false);
     connect(m_continuitySlider, SIGNAL(valueChanged(int)), this, SLOT(parameterChanged(int)));
 
+    int row = 0;
     QGridLayout* gridLayout = new QGridLayout();
-    gridLayout->addWidget(tensionLabel, 0, 0);
-    gridLayout->addWidget(m_tensionSlider, 0, 1);
-    gridLayout->addWidget(biasLabel, 1, 0);
-    gridLayout->addWidget(m_biasSlider, 1, 1);
-    gridLayout->addWidget(continuityLabel, 2, 0);
-    gridLayout->addWidget(m_continuitySlider, 2, 1);
+    gridLayout->addWidget(timeLabel, row, 0);
+    gridLayout->addWidget(m_timeEdit, row++, 1);
+    gridLayout->addWidget(valueLabel, row, 0);
+    gridLayout->addWidget(m_valueEdit, row++, 1);
+    gridLayout->addWidget(tensionLabel, row, 0);
+    gridLayout->addWidget(m_tensionSlider, row++, 1);
+    gridLayout->addWidget(biasLabel, row, 0);
+    gridLayout->addWidget(m_biasSlider, row++, 1);
+    gridLayout->addWidget(continuityLabel, row, 0);
+    gridLayout->addWidget(m_continuitySlider, row++, 1);
 
     this->setLayout(gridLayout);
 }
@@ -144,28 +159,116 @@ void PointPropertiesWidget::pointSelected(PointId id)
         if (curve->pointIds().contains(id))
         {
             m_selectedPoints.insert(id, curve);
+
+            if (m_selectedPoints.size() == 1)
+                setSingleSelectedPoint();
+            else
+                unsetSingleSelectedPoint();
+
+            selectedPointUpdated(m_singleSelectedPoint.first);
+            break;
         }
     }
 }
 
 void PointPropertiesWidget::pointDeselected(PointId id)
 {
+    Q_ASSERT(id.isValid());
+
+    if (m_singleSelectedPoint.first == id)
+    {
+        unsetSingleSelectedPoint();
+        Q_ASSERT(m_selectedPoints.size() == 1);
+    }
+
     m_selectedPoints.remove(id);
+
+    if (m_selectedPoints.size() == 1)
+    {
+        setSingleSelectedPoint();
+    }
+
+    selectedPointUpdated(m_singleSelectedPoint.first);
+}
+
+void PointPropertiesWidget::selectedPointUpdated(PointId id)
+{
+    if (id.isValid())
+    {
+        Q_ASSERT(id == m_singleSelectedPoint.first);
+
+        const Point p = m_singleSelectedPoint.second->point(id);
+
+        const QString timeText = QString("%1").arg(p.time());
+        if (m_timeEdit->text() != timeText)
+            m_timeEdit->setText(timeText);
+
+        const QString valueText = p.value().toString();
+        if (m_valueEdit->text() != valueText)
+            m_valueEdit->setText(valueText);
+    }
+    else
+    {
+        Q_ASSERT(!m_singleSelectedPoint.first.isValid());
+
+        m_timeEdit->setText("");
+        m_valueEdit->setText("");
+    }
 }
 
 void PointPropertiesWidget::parameterChanged(int value)
 {
     Q_UNUSED(value);
 
-    float t = tension();
-    float b = bias();
-    float c = continuity();
+    const float t = tension();
+    const float b = bias();
+    const float c = continuity();
 
     for (auto point : m_selectedPoints.keys())
     {
         std::shared_ptr<CurveModel> curve = m_selectedPoints[point];
         curve->updatePointParams(point, t, b, c);
     }
+}
+
+void PointPropertiesWidget::timeTextChanged(QString text)
+{
+    Q_ASSERT(m_singleSelectedPoint.first.isValid());
+
+    bool ok = false;
+    const float time = text.toFloat(&ok);
+
+    // Allow empty text or anything that converts to float
+    if (!ok && !text.isEmpty())
+    {
+        // Reset the bad text with selected point update notification
+        selectedPointUpdated(m_singleSelectedPoint.first);
+        return;
+    }
+
+    const Point p = m_singleSelectedPoint.second->point(m_singleSelectedPoint.first);
+    if (ok && (p.time() != time))
+        m_singleSelectedPoint.second->updatePoint(m_singleSelectedPoint.first, time, p.value());
+}
+
+void PointPropertiesWidget::valueTextChanged(QString text)
+{
+    Q_ASSERT(m_singleSelectedPoint.first.isValid());
+
+    bool ok = false;
+    const QVariant value = text.toFloat(&ok);
+
+    // Allow empty text or anything that converts to float
+    if (!ok && !text.isEmpty())
+    {
+        // Reset the bad text with selected point update notification
+        selectedPointUpdated(m_singleSelectedPoint.first);
+        return;
+    }
+
+    const Point p = m_singleSelectedPoint.second->point(m_singleSelectedPoint.first);
+    if (ok && (p.value() != value))
+        m_singleSelectedPoint.second->updatePoint(m_singleSelectedPoint.first, p.time(), value);
 }
 
 float PointPropertiesWidget::tension() const
@@ -183,3 +286,29 @@ float PointPropertiesWidget::continuity() const
     return m_continuitySlider->value() / 100.0f;
 }
 
+void PointPropertiesWidget::setSingleSelectedPoint()
+{
+    Q_ASSERT(m_selectedPoints.size() == 1);
+    Q_ASSERT(m_singleSelectedPoint.first == PointId::invalidId());
+
+    connect(m_selectedPoints.first().get(), SIGNAL(pointUpdated(PointId)), this, SLOT(selectedPointUpdated(PointId)));
+    connect(m_timeEdit, SIGNAL(textChanged(QString)), this, SLOT(timeTextChanged(QString)));
+    connect(m_valueEdit, SIGNAL(textChanged(QString)), this, SLOT(valueTextChanged(QString)));
+    m_singleSelectedPoint = std::make_pair(m_selectedPoints.firstKey(), m_selectedPoints.first());
+
+    m_timeEdit->setEnabled(true);
+    m_valueEdit->setEnabled(true);
+}
+
+void PointPropertiesWidget::unsetSingleSelectedPoint()
+{
+    if (m_singleSelectedPoint.first.isValid())
+    {
+        disconnect(m_singleSelectedPoint.second.get(), SIGNAL(pointUpdated(PointId)), this, SLOT(selectedPointUpdated(PointId)));
+        disconnect(m_timeEdit, SIGNAL(textChanged(QString)), this, SLOT(timeTextChanged(QString)));
+        disconnect(m_valueEdit, SIGNAL(textChanged(QString)), this, SLOT(valueTextChanged(QString)));
+        m_singleSelectedPoint = std::make_pair(PointId::invalidId(), nullptr);
+    }
+    m_timeEdit->setEnabled(false);
+    m_valueEdit->setEnabled(false);
+}
