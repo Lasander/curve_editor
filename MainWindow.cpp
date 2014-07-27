@@ -351,8 +351,8 @@ void MainWindow::updateSceneActionStates()
         m_newSceneAction->setEnabled(false);
         m_openSceneAction->setEnabled(false);
         m_saveSceneAction->setEnabled(true);
-        // Allow to save as if wa have previously saved
-        m_saveSceneAsAction->setEnabled(m_sceneModel->fileName().isEmpty());
+        // Allow to save as if we have previously saved
+        m_saveSceneAsAction->setEnabled(!m_sceneModel->fileName().isEmpty());
         m_closeSceneAction->setEnabled(true);
 
         // Got scene, allow exporting curves
